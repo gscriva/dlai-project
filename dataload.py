@@ -28,23 +28,24 @@ def read_data(filepath: str, usecols: int = 0, outfile: str = None) -> np.ndarra
 
 
 def pltgrid(plt_num: int, data: np.lib.npyio.NpzFile, keys: list) -> None:
-    """[summary]
+    """Function pltgrid plot a grid of samples indexed by a list of keys.
+    The plot has as many rows as the lenght of keys list.
 
     Args:
-        plt_num (int): [description]
-        data (int): [description]
-        keys (list, optional): [description]. Defaults to [].
+        plt_num (int): Number of samples to be plotted for each key.
+        data (np.lib.npyio.NpzFile): Data stored as an .npz archive.
+        keys (list): Keys to be retrived from the data archive. 
     """
     idx = np.random.randint(0, data[keys[0]].shape[0], plt_num)
     images = []
-
     for key in keys:
-        images.append(data[key][idx])
-    
+        for i in idx:
+            images.append(data[key][i])
+
     rows = len(keys)
-    print(len(images))
+    fig = plt.figure(figsize=(5 * plt_num, 4 * len(keys)))
+    fig.subplots_adjust(hspace=0.1, wspace=0.1)
     for num, image in enumerate(images):
         print(num)
-        plt.subplot(rows, plt_num, num+1)
-        plt.plot(image)
-        plt.show()
+        ax = fig.add_subplot(rows, plt_num, num + 1)
+        ax.plot(image)
