@@ -5,7 +5,11 @@ import torchvision
 import matplotlib.pyplot as plt
 
 
-def read_data(filepath: str, usecols: int = 0, outfile: str = None) -> np.ndarray:
+def read_arr_help(Args):
+    return read_arr(*Args, None)
+
+
+def read_arr(filepath: str, usecols: int = 0, outfile: bool = False) -> tuple:
     """This function reads .txt or .dat data and saves them as .npy or returns them as
         numpy  array. 
 
@@ -19,12 +23,13 @@ def read_data(filepath: str, usecols: int = 0, outfile: str = None) -> np.ndarra
     except:
         print("No such file in {0}".format(filepath))
 
-    out = np.getfromtxt(filepath, usecols=usecols)
-    if outfile is not None:
-        np.save(outfile, np.getfromtxt(filepath, usecols=usecols))
+    out = np.loadtxt(filepath, usecols=usecols)
+    name = os.path.basename(filepath)[:-4]
+    if outfile:
+        np.save(name + "npy", np.getfromtxt(filepath, usecols=usecols))
         print("Saved as {0}".format(outfile))
         out = None
-    return out
+    return (out, name)
 
 
 def pltgrid(plt_num: int, data: np.lib.npyio.NpzFile, keys: list) -> None:
