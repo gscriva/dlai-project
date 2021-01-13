@@ -13,6 +13,7 @@ def save_as_npz(data_path: str, data_size: int):
         if file[:4] == "spec" or file[:4] == "eval":
             path = os.path.join(data_path, file)
             if file[:4] == "eval":
+                # energy value is a scalar
                 paths.append((path, 1, 1))
             else:
                 paths.append((path, data_size, 1))
@@ -28,7 +29,7 @@ def save_as_npz(data_path: str, data_size: int):
     results = list(tqdm.tqdm(p.imap(read_arr_help, paths), total=len(paths)))
 
     np.savez(
-        "os.path.basename(data_path)" + "npz", **{el[1][:]: el[0] for el in results}
+        str(os.path.basename(data_path)) + ".npz", **{el[1][:]: el[0] for el in results}
     )
     return
 
