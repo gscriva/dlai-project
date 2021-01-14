@@ -7,7 +7,15 @@ import matplotlib.pyplot as plt
 import tqdm
 
 
-def save_as_npz(data_path: str, data_size: int):
+def save_as_npz(data_path: str, data_size: int) -> None:
+    """Read and save .dat data in a .npz file. The data retrievied are 
+    the array of speckle (both real and fourier), the x axis and the output values.
+    TODO: Use an input to specify the names of files to be retrieved. 
+
+    Args:
+        data_path (str): Path to the files.
+        data_size (int): Size of a single array in the data.
+    """
     paths = []
     for file in os.listdir(data_path):
         if file[:4] == "spec" or file[:4] == "eval":
