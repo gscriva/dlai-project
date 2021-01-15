@@ -11,7 +11,7 @@ class Speckle(Dataset):
         data_file: str,
         data_name: str,
         output_name: str = "evalues",
-        train: bool = False,
+        train: bool = True,
         train_size: float = 0.8,
         seed: int = 0,
     ):
@@ -20,7 +20,7 @@ class Speckle(Dataset):
             data_file (str): Path to the npz file.
             data_name (str): Key to retrieve the correct array from the file.
             output_name (str, optional): Key to get the energy values. Defaults to 'evalues'.
-            train (bool, optional): Set True if it has to return the train set. Defaults to False.
+            train (bool, optional): Set True if it has to return the train set. Defaults to True.
             train_size (float, optional): Set the size of training set. Defaults to 0.8.
             seed (int, optional): Seed to split the dataset between training and validation set.
         """
