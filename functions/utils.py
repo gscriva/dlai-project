@@ -101,12 +101,12 @@ def split_ds(datas: list, seed: int = 0, test_size: float = 0.2) -> dict:
     """[summary]
 
     Args:
-        datas (list): [description]
-        seed (int, optional): [description]. Defaults to 0.
-        test_size (float, optional): [description]. Defaults to 0.2.
+        datas (list): List of data.
+        seed (int, optional): Seed to generate pseudo-random split for test set. Defaults to 0.
+        test_size (float, optional): Percent of the size the test set. Defaults to 0.2.
 
     Returns:
-        dict: [description]
+        dict: Dictionary with two list, train and test. 
     """
     size_ds = datas[0][0].shape[0]
     np.random.seed(0)
