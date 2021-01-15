@@ -1,12 +1,15 @@
 import os
 from multiprocessing import Pool, cpu_count
+from math import floor
 
 import numpy as np
 import matplotlib.pyplot as plt
 import tqdm
 
 
-def save_as_npz(data_path: str, data_size: int) -> None:
+def save_as_npz(
+    data_path: str, data_size: int, seed: int = 0, test_size: float = 0.2
+) -> None:
     """Read and save .dat data in a .npz file. The data retrievied are 
     the array of speckle (both real and fourier), the x axis and the output values.
     
@@ -34,11 +37,13 @@ def save_as_npz(data_path: str, data_size: int) -> None:
 
     cpu = np.minimum(len(paths), cpu_count() // 2)
     p = Pool(cpu)
-    results = list(tqdm.tqdm(p.imap(read_arr_help, paths), total=len(paths)))
+    datas = list(tqdm.tqdm(p.imap(read_arr_help, paths), total=len(paths)))
 
-    np.savez(
-        str(os.path.basename(data_path)) + ".npz", **{el[1][:]: el[0] for el in results}
-    )
+    results = split_ds(datas, seed=seed, test_size=test_size)
+
+    for key in results:
+        outname = key + os.path.basename(data_path)
+        np.savez(str(outname) + ".npz", **{el[1][:]: el[0] for el in results[key]})
     return
 
 
@@ -90,6 +95,30 @@ def read_arr(
         print("Saved as {0}".format(outfile))
         out = None
     return (out, name)
+
+
+def split_ds(datas: list, seed: int = 0, test_size: float = 0.2) -> dict:
+    """[summary]
+
+    Args:
+        datas (list): [description]
+        seed (int, optional): [description]. Defaults to 0.
+        test_size (float, optional): [description]. Defaults to 0.2.
+
+    Returns:
+        dict: [description]
+    """
+    size_ds = datas[0][0].shape[0]
+    np.random.seed(0)
+    idx = np.full(size_ds, False, dtype=bool)
+    idx[np.random.choice(size_ds, floor(size_ds * test_size))] = True
+
+    data_dict = {"train": [], "test": []}
+    for data in datas:
+        data_dict["train"].append((data[0][np.logical_not(idx), ...], data[1]))
+        data_dict["test"].append((data[0][idx, ...], data[1]))
+
+    return data_dict
 
 
 def pltgrid(plt_num: int, data: np.lib.npyio.NpzFile, keys: list) -> None:
