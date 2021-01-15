@@ -98,7 +98,7 @@ def read_arr(
 
 
 def split_ds(datas: list, seed: int = 0, test_size: float = 0.2) -> dict:
-    """[summary]
+    """Split the dataset between training and test set.
 
     Args:
         datas (list): List of data.
@@ -111,7 +111,7 @@ def split_ds(datas: list, seed: int = 0, test_size: float = 0.2) -> dict:
     size_ds = datas[0][0].shape[0]
     np.random.seed(0)
     idx = np.full(size_ds, False, dtype=bool)
-    idx[np.random.choice(size_ds, floor(size_ds * test_size))] = True
+    idx[np.random.choice(size_ds, floor(size_ds * test_size), replace=False)] = True
 
     data_dict = {"train": [], "test": []}
     for data in datas:
