@@ -2,7 +2,6 @@ import os
 from multiprocessing import Pool, cpu_count
 
 import numpy as np
-import torchvision
 import matplotlib.pyplot as plt
 import tqdm
 
@@ -10,6 +9,7 @@ import tqdm
 def save_as_npz(data_path: str, data_size: int) -> None:
     """Read and save .dat data in a .npz file. The data retrievied are 
     the array of speckle (both real and fourier), the x axis and the output values.
+    
     TODO: Use an input to specify the names of files to be retrieved. 
 
     Args:
@@ -42,16 +42,16 @@ def save_as_npz(data_path: str, data_size: int) -> None:
     return
 
 
-def read_arr_help(Args):
+def read_arr_help(args):
     """A helper for read_arr used in parallel mode to unpack arguments.
 
     Args:
-        Args (tuple): Arguments to be passed to read_arr.
+        args (tuple): Arguments to be passed to read_arr.
 
     Returns:
         read_arr (callable): See below.
     """
-    return read_arr(*Args, None)
+    return read_arr(*args, None)
 
 
 def read_arr(
