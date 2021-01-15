@@ -42,7 +42,7 @@ def save_as_npz(
     results = split_ds(datas, seed=seed, test_size=test_size)
 
     for key in results:
-        outname = key + os.path.basename(data_path)
+        outname = key + "_" + os.path.basename(data_path)
         np.savez(str(outname) + ".npz", **{el[1][:]: el[0] for el in results[key]})
     return
 
