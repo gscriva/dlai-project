@@ -1,4 +1,5 @@
 import os
+import copy
 from multiprocessing import Pool, cpu_count
 from math import floor
 
@@ -7,7 +8,7 @@ import torch
 import matplotlib.pyplot as plt
 import tqdm
 
-from data_loader import MultiLayerPerceptron
+from functions.model import MultiLayerPerceptron
 
 
 def load_data(
@@ -40,20 +41,20 @@ def save_as_npz(
             if file[:4] == "eval":
                 # energy value is a scalar
                 paths.append((path, 1, 1))
-            elif file[:4] == "speckleF":
+            elif file[:8] == "speckleF":
                 # speckleF has real and imag part
                 paths.append((path, data_size, (1, 2)))
             else:
                 # valid for speckleR, just real
                 paths.append((path, data_size, 1))
+    old_paths = copy.deepcopy(paths)
     # append extra vector with x axis
-    for path in paths:
-        filename = os.path.basename(path[0])[:-5]
+    for path in old_paths:
+        filename = os.path.basename(path[0])[:-4]
         if filename == "speckleR":
             paths.append((path[0], data_size, 0, "x_axis"))
         elif filename == "speckleF":
             paths.append((path[0], data_size, 0, "csi_axis"))
-
     cpu = np.minimum(len(paths), cpu_count() // 2)
     p = Pool(cpu)
     datas = list(tqdm.tqdm(p.imap(read_arr_help, paths), total=len(paths)))
