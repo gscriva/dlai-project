@@ -10,15 +10,17 @@ class Speckle(Dataset):
         self,
         data_file: str,
         data_name: str,
+        transform=None,
         output_name: str = "evalues",
         train: bool = True,
         train_size: float = 0.9,
         seed: int = 0,
     ):
         """
-        Args:
+        Attribute:
             data_file (str): Path to the npz file.
             data_name (str): Key to retrieve the correct array from the file.
+            transform () Compose of transformations to  apply to the dataset. Defaults to None.
             output_name (str, optional): Key to get the energy values. Defaults to 'evalues'.
             train (bool, optional): Set True if it has to return the train set. Defaults to True.
             train_size (float, optional): Set the size of training set. Defaults to 0.9.
@@ -34,11 +36,14 @@ class Speckle(Dataset):
         ] = True
         if not train:
             idx = np.logical_not(idx)
-        self.dataset = data[data_name][idx, :]
+        self.dataset = data[data_name][idx, ...]
         self.evalues = data[output_name][idx]
+
+        if transform:
+            self.dataset = transform(self.dataset)
 
     def __len__(self):
         return (self.evalues).size
 
     def __getitem__(self, idx):
-        return self.dataset[idx, :], self.evalues[idx]
+        return self.dataset[idx, ...], self.evalues[idx]
