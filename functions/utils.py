@@ -121,6 +121,9 @@ def split_ds(datas: list, seed: int = 0, test_size: float = 0.2) -> dict:
     return data_dict
 
 
+##################### PLOT FUNCTIONS ########################
+
+
 def pltgrid(plt_num: int, data: np.lib.npyio.NpzFile, keys: list) -> None:
     """Function pltgrid plot a grid of samples indexed by a list of keys.
     The plot has as many rows as the lenght of keys list.
