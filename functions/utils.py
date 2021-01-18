@@ -3,8 +3,22 @@ from multiprocessing import Pool, cpu_count
 from math import floor
 
 import numpy as np
+import torch
 import matplotlib.pyplot as plt
 import tqdm
+
+from data_loader import MultiLayerPerceptron
+
+
+def load_data(
+    dataset_path: str,
+    data_name: str,
+    batch_size: int,
+    shuffle: bool = True,
+    num_workers: int = 10,
+) -> tuple:
+
+    return train_loader, valid_loader
 
 
 def save_as_npz(
@@ -26,14 +40,19 @@ def save_as_npz(
             if file[:4] == "eval":
                 # energy value is a scalar
                 paths.append((path, 1, 1))
+            elif file[:4] == "speckleF":
+                # speckleF has real and imag part
+                paths.append((path, data_size, (1, 2)))
             else:
+                # valid for speckleR, just real
                 paths.append((path, data_size, 1))
     # append extra vector with x axis
     for path in paths:
         filename = os.path.basename(path[0])[:-5]
-        if filename == "speckle":
+        if filename == "speckleR":
             paths.append((path[0], data_size, 0, "x_axis"))
-            break
+        elif filename == "speckleF":
+            paths.append((path[0], data_size, 0, "csi_axis"))
 
     cpu = np.minimum(len(paths), cpu_count() // 2)
     p = Pool(cpu)
@@ -147,3 +166,19 @@ def pltgrid(plt_num: int, data: np.lib.npyio.NpzFile, keys: list) -> None:
         ax = fig.add_subplot(rows, plt_num, num + 1)
         ax.plot(image)
     return
+
+    def torch_fftshift(real, imag):
+        """Compute the fftshift of Fourier data.
+
+        Args:
+            real (torch.Tensor): Real part of fft.
+            imag (torch.Tensor): Imag part of fft.
+
+        Returns:
+            tuple: real and imag part shifted.
+        """
+
+    for dim in range(0, len(real.size())):
+        real = torch.roll(real, dims=dim, shifts=real.size(dim) // 2)
+        imag = torch.roll(imag, dims=dim, shifts=imag.size(dim) // 2)
+    return real, imag
