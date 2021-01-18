@@ -9,15 +9,15 @@ from model import *
 
 
 def main(
-    dataset_path,
-    batch_size,
-    num_workers=10,
-    use_gpu=False,
-    train=False,
-    epochs=20,
-    layers=3,
-    learning_rate=0.001,
-    weight_decay=0.03,
+    dataset_path: str,
+    batch_size: int,
+    num_workers: int = 10,
+    use_gpu: bool = False,
+    train: bool = False,
+    epochs: int = 20,
+    layers: int = 3,
+    learning_rate: float = 0.001,
+    weight_decay: float = 0.03,
 ):
 
     # TODO add parser with args=[use_gpu, layers, (model?), dataset_path,
