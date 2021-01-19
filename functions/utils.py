@@ -67,7 +67,7 @@ def save_as_npz(
 
     for key in results:
         outname = key + "_" + os.path.basename(data_path)
-        print("Saving {0} dataset as {1}".format(key, outname))
+        # print("Saving {0} dataset as {1}".format(key, outname))
         np.savez(str(outname) + ".npz", **{el[1][:]: el[0] for el in results[key]})
     return
 
