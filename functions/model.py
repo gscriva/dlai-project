@@ -4,9 +4,9 @@ import torch.nn as nn
 class MultiLayerPerceptron(nn.Module):
     """Multi Layer Perceptron"""
 
-    def __init__(self, layers):
+    def __init__(self, layers, input_size):
         super(MultiLayerPerceptron, self).__init__()
-        sizes = [256] + [150] * layers + [1]
+        sizes = [input_size] + [150] * layers + [1]
         fc_layers = []
         for i in range(len(sizes) - 1):
             fc_layers.append(nn.Linear(sizes[i], sizes[i + 1]))
