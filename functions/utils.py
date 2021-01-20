@@ -5,21 +5,54 @@ from typing import Any, Callable
 
 import numpy as np
 import torch
+from torchvision import transforms
 import matplotlib.pyplot as plt
 import tqdm
 
 from functions.model import MultiLayerPerceptron
+from functions.data_loader import Speckle
 
 
 def load_data(
     dataset_path: str,
-    data_name: str,
+    input_name: str,
+    output_name: str,
+    input_size: int,
     batch_size: int,
+    test_batch_size: int,
+    transform: transforms.transforms.Compose = None,
     shuffle: bool = True,
     num_workers: int = 10,
 ) -> tuple:
 
-    return train_loader, valid_loader
+    train_set = Speckle(
+        dataset_path,
+        input_name,
+        input_size,
+        transform=transform,
+        output_name=output_name,
+        train=True,
+        train_size=0.9,
+        seed=0,
+    )
+    val_set = Speckle(
+        dataset_path,
+        input_name,
+        input_size,
+        transform=transform,
+        output_name=output_name,
+        train=False,
+        train_size=0.9,
+        seed=0,
+    )
+
+    train_loader = torch.utils.data.DataLoader(
+        train_set, batch_size=batch_size, shuffle=shuffle
+    )
+    val_loader = torch.utils.data.DataLoader(
+        val_set, batch_size=test_batch_size, shuffle=False
+    )
+    return train_loader, val_loader
 
 
 def save_as_npz(
