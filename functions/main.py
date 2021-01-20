@@ -1,18 +1,22 @@
 import torch
+from torchvision import transforms
 import numpy as np
 
 # import torch.nn as nn
 
 
-from utils import *
-from model import *
+from utils import load_data
+from model import MultiLayerPerceptron
 
 
 def main(
     dataset_path: str,
+    input_name: str,
+    output_name: str,
+    input_size: int,
     batch_size: int,
+    test_batch_size: int,
     num_workers: int = 10,
-    use_gpu: bool = False,
     train: bool = False,
     epochs: int = 20,
     layers: int = 3,
@@ -20,16 +24,13 @@ def main(
     weight_decay: float = 0.03,
 ):
 
-    # TODO add parser with args=[use_gpu, layers, (model?), dataset_path,
-    # batch_size, shuffle, num_workers, learning_rate, train]
+    # TODO add parser with args
 
     # check if GPU is available
-    use_gpu = use_gpu and torch.cuda.is_available()
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # import model and move it to GPU if available
-    model = MultiLayerPerceptron(layers)
-    if use_gpu:
-        model = model.cuda()
+    model = MultiLayerPerceptron(layers, input_size).to(device)
 
     # import loss and optimizer
     loss_func = torch.nn.MSELoss()
@@ -37,9 +38,24 @@ def main(
         model.parameters(), lr=learning_rate, weight_decay=weight_decay
     )
 
-    # load training and test dataset
+    # define transform to apply
+    transform_list = [
+        transforms.ToTensor(),
+    ]
+    transform = transforms.Compose(transform_list)
+
+    # load training and validation dataset
     train_loader, valid_loader = load_data(
-        dataset_path, batch_size=batch_size, shuffle=True, num_workers=num_workers
+        dataset_path,
+        input_name,
+        output_name,
+        input_size,
+        batch_size,
+        test_batch_size,
+        transform=transform,
+        device=device,
+        shuffle=True,
+        num_workers=num_workers,
     )
 
     best_losses = np.infty
@@ -57,7 +73,7 @@ def main(
                 opt.step()
                 opt.zero_grad()
 
-            print("loss: {0}".format(loss_func(model(speckle), energy)))
+            print("train loss: {0}".format(loss_func(model(speckle), energy)))
 
             model.eval()
             with torch.no_grad():
@@ -66,6 +82,8 @@ def main(
                     for speckle, energy in valid_loader
                 )
                 validate_loss[epoch] = val_loss
+
+            print("validation loss: {0}".format(val_loss), energy)))
 
             checkpoint_dict = {
                 "model_state_dict": model.state_dict(),
@@ -82,12 +100,9 @@ def main(
                 torch.save(checkpoint_dict, "checkpoints/best-model.pth")
 
             # save model on each epoch
-            if epoch % 5 == 0:
+            if epoch % 1 == 0:
                 torch.save(
-                    checkpoint_dict,
-                    "checkpoints/model-epoch-{}-losses-{:.0f}.pth".format(
-                        epoch, int(val_loss)
-                    ),
+                    checkpoint_dict, "checkpoints/model-epoch-{}.pth".format(epoch)
                 )
 
 
