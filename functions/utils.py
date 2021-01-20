@@ -25,7 +25,7 @@ def load_data(
 def save_as_npz(
     data_path: str, data_size: int, seed: int = 0, test_size: float = 0.2
 ) -> None:
-    """Read and save .dat data in a .npz file. The data retrievied are 
+    """Read and save .dat data in a .npz file. The data retrieved are 
     the array of speckle (both real and fourier), the x axis and the output values.
     
     TODO: Use an input to specify the names of files to be retrieved. 
@@ -148,16 +148,15 @@ def split_ds(datas: list, seed: int = 0, test_size: float = 0.2) -> dict:
     for data in datas:
         data_dict["train"].append((data[0][np.logical_not(idx), ...], data[1]))
         data_dict["test"].append((data[0][idx, ...], data[1]))
-
     return data_dict
 
 
 ##################### PLOT FUNCTIONS ########################
 
 
-def pltgrid(plt_num: int, data: np.lib.npyio.NpzFile, keys: list) -> None:
-    """Function pltgrid plot a grid of samples indexed by a list of keys.
-    The plot has as many rows as the lenght of keys list.
+def pltdataset(plt_num: int, data: np.lib.npyio.NpzFile, keys: list) -> None:
+    """Function pltgrid plots a grid of samples indexed by a list of keys.
+    The plot has as many rows as the length of keys list.
 
     Args:
         plt_num (int): Number of samples to be plotted for each key.
@@ -174,23 +173,26 @@ def pltgrid(plt_num: int, data: np.lib.npyio.NpzFile, keys: list) -> None:
     fig = plt.figure(figsize=(5 * plt_num, 4 * len(keys)))
     fig.subplots_adjust(hspace=0.1, wspace=0.1)
     for num, image in enumerate(images):
-        print(num)
         ax = fig.add_subplot(rows, plt_num, num + 1)
-        ax.plot(image)
+        if image.dtype == np.complex128:
+            ax.plot(np.imag(image), "*", label="Imag component")
+        ax.plot(image, label="Real component")
+        plt.legend()
     return
 
-    def torch_fftshift(real, imag):
-        """Compute the fftshift of Fourier data.
 
-        Args:
-            real (torch.Tensor): Real part of fft.
-            imag (torch.Tensor): Imag part of fft.
+def torch_fftshift(real, imag):
+    """Compute the fftshift of Fourier data.
 
-        Returns:
-            tuple: real and imag part shifted.
-        """
+    Args:
+        real (torch.Tensor): Real part of fft.
+        imag (torch.Tensor): Imag part of fft.
 
+    Returns:
+        tuple: real and imag part shifted.
+    """
     for dim in range(0, len(real.size())):
         real = torch.roll(real, dims=dim, shifts=real.size(dim) // 2)
         imag = torch.roll(imag, dims=dim, shifts=imag.size(dim) // 2)
+
     return real, imag
