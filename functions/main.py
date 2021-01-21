@@ -79,7 +79,7 @@ def main(
 
             print(
                 "train loss: {0}".format(
-                    train_loss[epoch] / (len(train_loader) * batch_size), energy
+                    train_loss[epoch] / (len(train_loader) * batch_size)
                 )
             )
 
