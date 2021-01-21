@@ -1,12 +1,10 @@
+import os
+from collections import defaultdict
+
+import numpy as np
 import torch
 from torchvision import transforms
-import numpy as np
-from collections import defaultdict
 from tqdm import tqdm
-import os
-
-# import torch.nn as nn
-
 
 from utils import load_data
 from model import MultiLayerPerceptron
@@ -71,6 +69,8 @@ def main(
             for speckle, energy in tqdm(train_loader):
                 speckle, energy = speckle.to(device), energy.to(device)
                 pred = model(speckle)
+                # pred has dim (batch_size, 1),
+                # to avoid error in computing loss we squeeze the last dim
                 pred = torch.squeeze(pred)
                 loss = loss_func(pred, energy)
                 train_loss[epoch] += loss  # check type
