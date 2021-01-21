@@ -9,8 +9,8 @@ from torchvision import transforms
 import matplotlib.pyplot as plt
 import tqdm
 
-from functions.model import MultiLayerPerceptron
-from functions.data_loader import Speckle
+from model import MultiLayerPerceptron
+from data_loader import Speckle
 
 
 def load_data(
@@ -21,7 +21,6 @@ def load_data(
     batch_size: int,
     test_batch_size: int,
     transform: transforms.transforms.Compose = None,
-    shuffle: bool = True,
     num_workers: int = 10,
 ) -> tuple:
 
@@ -47,10 +46,10 @@ def load_data(
     )
 
     train_loader = torch.utils.data.DataLoader(
-        train_set, batch_size=batch_size, shuffle=shuffle
+        train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers
     )
     val_loader = torch.utils.data.DataLoader(
-        val_set, batch_size=test_batch_size, shuffle=False
+        val_set, batch_size=test_batch_size, shuffle=False, num_workers=num_workers
     )
     return train_loader, val_loader
 
@@ -214,8 +213,9 @@ def pltdataset(plt_num: int, data: np.lib.npyio.NpzFile, keys: list) -> None:
     return
 
 
+"""
 def torch_fftshift(real, imag):
-    """Compute the fftshift of Fourier data.
+    Compute the fftshift of Fourier data.
 
     Args:
         real (torch.Tensor): Real part of fft.
@@ -223,9 +223,10 @@ def torch_fftshift(real, imag):
 
     Returns:
         tuple: real and imag part shifted.
-    """
-    for dim in range(0, len(real.size())):
+    
+        for dim in range(0, len(real.size())):
         real = torch.roll(real, dims=dim, shifts=real.size(dim) // 2)
         imag = torch.roll(imag, dims=dim, shifts=imag.size(dim) // 2)
 
     return real, imag
+"""
