@@ -47,20 +47,23 @@ class Speckle(Dataset):
 
         self.dataset = data[data_name][idx, :input_size]
         self.evalues = data[output_name][idx]
+        self.transform = transform
 
-        self._get_real_ds()
-
-        if transform:
-            self.dataset = transform(self.dataset)
+        if self.dataset.dtype == np.complex128:
+            self._get_real_ds()
 
     def __len__(self):
         return (self.evalues).size
 
     def __getitem__(self, idx):
-        return self.dataset[idx, ...], self.evalues[idx]
+        image = self.dataset[idx, ...]
+        evalues = self.evalues[idx]
+        if self.transform:
+            image = self.transform(image)
+            evalues = self.transform(evalues)
+        return (image, evalues)
 
     def _get_real_ds(self):
-        if self.dataset.dtype == np.complex128:
-            real_ds = np.real(self.dataset)
-            imag_ds = np.imag(self.dataset)
-            self.dataset = np.append(real_ds, imag_ds, axis=1)
+        real_ds = np.real(self.dataset)
+        imag_ds = np.imag(self.dataset)
+        self.dataset = np.append(real_ds, imag_ds, axis=1)
