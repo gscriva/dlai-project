@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import torch.nn as nn
 
 
@@ -6,13 +8,15 @@ class MultiLayerPerceptron(nn.Module):
 
     def __init__(self, layers, input_size):
         super(MultiLayerPerceptron, self).__init__()
+
         sizes = [input_size] + [150] * layers + [1]
-        fc_layers = []
+
+        fc_layers = OrderedDict()
         for i in range(len(sizes) - 1):
-            fc_layers.append(nn.Linear(sizes[i], sizes[i + 1]))
+            fc_layers["linear{0}".format(i)] = nn.Linear(sizes[i], sizes[i + 1])
             if i == len(sizes) - 2:
                 continue
-            fc_layers.append(nn.ReLU())
+            fc_layers["relu"] = nn.ReLU()
 
         self.layers = nn.Sequential(fc_layers)
 
