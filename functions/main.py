@@ -34,8 +34,9 @@ def main(
     # check if GPU is available
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # import model and move it to GPU if available
+    # import model, set its parameter as double and move it to GPU if available
     model = MultiLayerPerceptron(layers, 2 * input_size).to(device)
+    model = model.double()
 
     # import loss and optimizer
     loss_func = torch.nn.MSELoss()
