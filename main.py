@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from utils import load_data
 from model import MultiLayerPerceptron
+from score import make_averager
 
 
 def main(
@@ -61,41 +62,49 @@ def main(
     )
 
     best_losses = np.infty
-    train_loss = defaultdict(int)
-    validate_loss = defaultdict(int)
-
     if train:
-        for epoch in range(epochs):
-            for speckle, energy in tqdm(train_loader):
+        for epoch in tqdm(range(epochs), total=epochs):
+            # mantain a running average of the loss
+            train_loss_averager = make_averager()
+            tqdm_iterator = tqdm(
+                train_loader,
+                total=len(train_loader),
+                desc=f"batch [loss: None]",
+                leave=False,
+            )
+            for speckle, energy in tqdm_iterator:
                 speckle, energy = speckle.to(device), energy.to(device)
-                pred = model(speckle)
                 # pred has dim (batch_size, 1),
                 # to avoid error in computing loss we squeeze the last dim
-                pred = torch.squeeze(pred)
+                pred = torch.squeeze(model(speckle))
+
                 loss = loss_func(pred, energy)
-                train_loss[epoch] += loss  # check type
                 loss.backward()
+
                 opt.step()
                 opt.zero_grad()
 
-            print(
-                "train loss: {0}".format(
-                    train_loss[epoch] / (len(train_loader) * batch_size)
+                train_loss_averager(loss.item())
+
+                tqdm_iterator.set_description(
+                    f"train batch [avg loss: {train_loss_averager(None):.3f}]"
                 )
-            )
+                tqdm_iterator.refresh()
 
             model.eval()
-            with torch.no_grad():
-                val_loss = sum(
-                    loss_func(torch.squeeze(model(speckle)), energy)
-                    for speckle, energy in valid_loader
-                )
-                validate_loss[epoch] += val_loss
+            valid_loss_averager = make_averager()
+            for data, target in valid_loader:
+                with torch.no_grad():
+                    data, target = data.to(device), target.to(device)
+
+                    pred = torch.squeeze(model(speckle))
+
+                    valid_loss_averager(loss_func(pred, target))
 
             print(
-                "validation loss: {0}".format(
-                    val_loss / (len(valid_loader) * test_batch_size)
-                )
+                f"\n\nEpoch: {epoch}\n"
+                f"Train set: Average loss: {train_loss_averager(None):.4f}\n"
+                f"Validation set: Average loss: {valid_loss_averager(None):.4f}"
             )
 
             checkpoint_dict = {
@@ -103,10 +112,11 @@ def main(
                 "optimizer_state_dict": opt.state_dict(),
                 "epoch": epoch,
                 "best_losses": best_losses,
-                "train_loss": train_loss,
-                "validate_loss": validate_loss,
+                "train_loss": train_loss_averager(None),
+                "validate_loss": valid_loss_averager(None),
             }
 
+            val_loss = valid_loss_averager(None)
             # Save checkpoint every 5 epochs or when a better model is produced
             if val_loss < best_losses:
                 best_losses = val_loss
@@ -124,12 +134,12 @@ def main(
 # test_batch_size: int, num_workers: int = 10, train: bool = False, epochs: int = 20,
 # layers: int = 3, learning_rate: float = 0.001, weight_decay: float = 0.03,
 main(
-    "train_L14_nup1np256_V4.npz",
+    "dataset/train_L14_nup1np256_V4.npz",
     "speckleF",
     "evalues",
     15,
     100,
     200,
     train=True,
-    epochs=15,
+    epochs=30,
 )
