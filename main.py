@@ -3,12 +3,13 @@ from collections import defaultdict
 
 import numpy as np
 import torch
+from ignite.contrib.metrics.regression import R2Score
 from torchvision import transforms
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
-from utils import load_data
 from model import MultiLayerPerceptron
 from score import make_averager
+from utils import load_data
 
 
 def main(
@@ -38,7 +39,7 @@ def main(
     model = model.double()
 
     # import loss and optimizer
-    loss_func = torch.nn.MSELoss()
+    criterion = torch.nn.MSELoss()
     opt = torch.optim.Adam(
         model.parameters(), lr=learning_rate, weight_decay=weight_decay
     )
@@ -62,8 +63,9 @@ def main(
     )
 
     best_losses = np.infty
+    r2_score = R2Score()
     if train:
-        for epoch in tqdm(range(epochs), total=epochs):
+        for epoch in trange(epochs, total=epochs, leave=True):
             # mantain a running average of the loss
             train_loss_averager = make_averager()
             tqdm_iterator = tqdm(
@@ -72,13 +74,15 @@ def main(
                 desc=f"batch [loss: None]",
                 leave=False,
             )
-            for speckle, energy in tqdm_iterator:
-                speckle, energy = speckle.to(device), energy.to(device)
-                # pred has dim (batch_size, 1),
-                # to avoid error in computing loss we squeeze the last dim
-                pred = torch.squeeze(model(speckle))
+            for data, target in tqdm_iterator:
+                data, target = data.to(device), target.to(device)
 
-                loss = loss_func(pred, energy)
+                pred = model(data)
+
+                # pred has dim (batch_size, 1), target (batch_size)
+                target = target.unsqueeze(1)
+
+                loss = criterion(pred, target)
                 loss.backward()
 
                 opt.step()
@@ -97,15 +101,24 @@ def main(
                 with torch.no_grad():
                     data, target = data.to(device), target.to(device)
 
-                    pred = torch.squeeze(model(speckle))
+                    pred = model(data)
 
-                    valid_loss_averager(loss_func(pred, target))
+                    # pred has dim (batch_size, 1)
+                    target = target.unsqueeze(1)
+
+                    valid_loss_averager(criterion(pred, target))
+                    r2_score.update((pred, target))
 
             print(
                 f"\n\nEpoch: {epoch}\n"
                 f"Train set: Average loss: {train_loss_averager(None):.4f}\n"
-                f"Validation set: Average loss: {valid_loss_averager(None):.4f}"
+                f"Validation set: Average loss: {valid_loss_averager(None):.4f}\n"
+                f"Validation set: R2 score: {r2_score.compute():.4f}\n\n"
+                f"Validation set: Best loss: {best_losses:.4f}"
+                # f"Validation set: Best R2 score: {r2_score.compute():.4f}"
             )
+
+            r2_score.reset()
 
             checkpoint_dict = {
                 "model_state_dict": model.state_dict(),
