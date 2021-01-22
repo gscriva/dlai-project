@@ -16,7 +16,7 @@ class MultiLayerPerceptron(nn.Module):
             fc_layers["linear{0}".format(i)] = nn.Linear(sizes[i], sizes[i + 1])
             if i == len(sizes) - 2:
                 continue
-            fc_layers["relu"] = nn.ReLU()
+            fc_layers["relu{0}".format(i)] = nn.ReLU()
 
         self.layers = nn.Sequential(fc_layers)
 
