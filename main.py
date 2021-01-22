@@ -63,7 +63,8 @@ def main(
     )
 
     best_losses = np.infty
-    r2_score = R2Score()
+    valid_r2 = R2Score()
+    train_r2 = R2Score()
     if train:
         for epoch in trange(epochs, total=epochs, leave=True):
             # mantain a running average of the loss
@@ -74,6 +75,7 @@ def main(
                 desc=f"batch [loss: None]",
                 leave=False,
             )
+            train_r2.reset()
             for data, target in tqdm_iterator:
                 data, target = data.to(device), target.to(device)
 
@@ -89,6 +91,7 @@ def main(
                 opt.zero_grad()
 
                 train_loss_averager(loss.item())
+                train_r2.update((pred, target))
 
                 tqdm_iterator.set_description(
                     f"train batch [avg loss: {train_loss_averager(None):.3f}]"
@@ -97,6 +100,7 @@ def main(
 
             model.eval()
             valid_loss_averager = make_averager()
+            valid_r2.reset()
             for data, target in valid_loader:
                 with torch.no_grad():
                     data, target = data.to(device), target.to(device)
@@ -107,18 +111,17 @@ def main(
                     target = target.unsqueeze(1)
 
                     valid_loss_averager(criterion(pred, target))
-                    r2_score.update((pred, target))
+                    valid_r2.update((pred, target))
 
             print(
                 f"\n\nEpoch: {epoch}\n"
                 f"Train set: Average loss: {train_loss_averager(None):.4f}\n"
+                f"Train set: R2 score: {train_r2.compute():.4f}\n"
                 f"Validation set: Average loss: {valid_loss_averager(None):.4f}\n"
-                f"Validation set: R2 score: {r2_score.compute():.4f}\n\n"
+                f"Validation set: R2 score: {valid_r2.compute():.4f}\n"
                 f"Validation set: Best loss: {best_losses:.4f}"
-                # f"Validation set: Best R2 score: {r2_score.compute():.4f}"
+                # f"Validation set: Best R2 score: {valid_r2.compute():.4f}"
             )
-
-            r2_score.reset()
 
             checkpoint_dict = {
                 "model_state_dict": model.state_dict(),
@@ -154,5 +157,5 @@ main(
     100,
     200,
     train=True,
-    epochs=30,
+    epochs=40,
 )
