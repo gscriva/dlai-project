@@ -134,3 +134,6 @@ dmypy.json
 # Data
 *.npz
 dataset/data_L14.npz_old
+
+# model checkpoints
+checkpoints/*
