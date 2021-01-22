@@ -34,7 +34,7 @@ def main(
     # check if GPU is available
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # import model, set its parameter as double and move it to GPU if available
+    # import model, set its parameter as double and move it to GPU (if available)
     model = MultiLayerPerceptron(layers, 2 * input_size).to(device)
     model = model.double()
 
@@ -82,7 +82,8 @@ def main(
                 pred = model(data)
 
                 # pred has dim (batch_size, 1), target (batch_size)
-                target = target.unsqueeze(1)
+                # target = target.unsqueeze(1)
+                pred = pred.squeeze()
 
                 loss = criterion(pred, target)
                 loss.backward()
@@ -108,7 +109,8 @@ def main(
                     pred = model(data)
 
                     # pred has dim (batch_size, 1)
-                    target = target.unsqueeze(1)
+                    # target = target.unsqueeze(1)
+                    pred = pred.squeeze()
 
                     valid_loss_averager(criterion(pred, target))
                     valid_r2.update((pred, target))
@@ -119,7 +121,7 @@ def main(
                 f"Train set: R2 score: {train_r2.compute():.4f}\n"
                 f"Validation set: Average loss: {valid_loss_averager(None):.4f}\n"
                 f"Validation set: R2 score: {valid_r2.compute():.4f}\n"
-                f"Validation set: Best loss: {best_losses:.4f}"
+                # f"Validation set: Best loss: {best_losses:.4f}"
                 # f"Validation set: Best R2 score: {valid_r2.compute():.4f}"
             )
 
@@ -143,6 +145,7 @@ def main(
                 torch.save(
                     checkpoint_dict, "checkpoints/model-epoch-{}.pth".format(epoch)
                 )
+            torch.save(model, "model1")
 
 
 # args = ["train_L14_nup1np256_V4.npz", "speckleF", "evalues", 30, 60, 10, True]
@@ -154,8 +157,12 @@ main(
     "speckleF",
     "evalues",
     15,
-    100,
-    200,
+    1000,
+    2000,
     train=True,
-    epochs=40,
+    epochs=500,
+    layers=6,
+    learning_rate=0.0001,
+    num_workers=4,
+    weight_decay=0.0,
 )
