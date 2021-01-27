@@ -32,6 +32,10 @@ def main(
 
     # TODO add parser with args
 
+    # limit number of CPUs
+    torch.set_num_interop_threads(num_workers)
+    torch.set_num_threads(num_workers)
+
     # check if GPU is available
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -170,7 +174,7 @@ main(
     epochs=70,
     # layers=6,
     learning_rate=0.0001,
-    num_workers=0,
+    # num_workers=0,
     weight_decay=0.0,
     model_type="CNN",
 )
