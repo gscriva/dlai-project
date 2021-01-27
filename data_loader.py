@@ -17,6 +17,7 @@ class Speckle(Dataset):
         train: bool = True,
         train_size: float = 0.9,
         seed: int = 0,
+        model: str = "MLP",
     ):
         """
         Args:
@@ -27,7 +28,8 @@ class Speckle(Dataset):
             output_name (str, optional): Key to get the energy values. Defaults to 'evalues'.
             train (bool, optional): Set True if it has to return the train set. Defaults to True.
             train_size (float, optional): Set the size of training set. Defaults to 0.9.
-            seed (int, optional): Seed to split the dataset between training and validation set.
+            seed (int, optional): Seed to split the dataset between training and validation set. Defaults to 0.
+            model (str, optional): Specify model. Defaults to MLP
         """
         data = np.load(data_file)
         size_ds = len(data[output_name])
@@ -45,12 +47,11 @@ class Speckle(Dataset):
         if input_size is None:
             input_size = size_ds
 
-        self.dataset = data[data_name][idx, :input_size]
+        self._get_correct_ds(data, data_name, idx, input_size, model)
+
         self.evalues = data[output_name][idx]
         self.transform = transform
-
-        if self.dataset.dtype == np.complex128:
-            self._get_real_ds()
+        self.model = model
 
     def __len__(self):
         return (self.evalues).size
@@ -63,7 +64,32 @@ class Speckle(Dataset):
             evalues = self.transform(evalues)
         return (image, evalues)
 
+    def _get_correct_ds(self, data, data_name, idx, input_size, model):
+        if model == "MLP":
+            # only input_size coef are non zeros
+            self.dataset = data[data_name][idx, :input_size]
+            # Fourier data are complex, so we take real and imag part
+            # as feature vector
+            self._get_real_ds()
+        elif model == "CNN":
+            # we load all the non zero coef, even if
+            # are symmetric
+            self.dataset = data[data_name][idx, :input_size]
+            self.dataset = np.append(
+                self.dataset, data[data_name][idx, -input_size + 1 :]
+            )
+            self.dataset = np.fft.fftshift(self.dataset)
+            self._get2ch()
+        else:
+            raise NotImplementedError("Only MLP and CNN are accepted")
+
     def _get_real_ds(self):
         real_ds = np.real(self.dataset)
         imag_ds = np.imag(self.dataset)
         self.dataset = np.append(real_ds, imag_ds, axis=1)
+
+    def _get2ch(self):
+        real_ds = np.real(self.dataset)
+        imag_ds = np.imag(self.dataset)
+        self.dataset = np.vstack((real_ds, imag_ds))
+
