@@ -19,6 +19,7 @@ def main(
     input_size: int,
     batch_size: int,
     test_batch_size: int,
+    model: str = "MLP"
     num_workers: int = 8,
     train: bool = False,
     epochs: int = 20,
@@ -60,6 +61,7 @@ def main(
         test_batch_size,
         transform=transform,
         num_workers=num_workers,
+        model=model,
     )
 
     best_losses = np.infty
