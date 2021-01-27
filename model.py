@@ -33,19 +33,15 @@ class CNN(nn.Module):
             nn.ReLU(),
             nn.Conv1d(32, 64, kernel_size=5, stride=1, padding=2),
             nn.ReLU(),
-            nn.Conv1d(64, 64, kernel_size=5, stride=1, padding=2)
+            nn.Conv1d(64, 64, kernel_size=5, stride=1, padding=2),
             nn.ReLU(),
             nn.Conv1d(64, 64, kernel_size=5, stride=1, padding=2),
             nn.ReLU(),
-            nn.Conv1d(64, 32, kernel_size=5, stride=1, padding=2)
+            nn.Conv1d(64, 32, kernel_size=5, stride=1, padding=2),
             nn.ReLU(),
         )
 
-        self.fc = nn.Sequential(
-            nn.Linear(32, 32),
-            nn.ReLU(),
-            nn.Linear(32, 1),
-        )
+        self.fc = nn.Sequential(nn.Linear(32, 32), nn.ReLU(), nn.Linear(32, 1),)
 
     def forward(self, x):
         x = self.conv1(x)
