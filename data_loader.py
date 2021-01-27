@@ -76,7 +76,7 @@ class Speckle(Dataset):
             # are symmetric
             self.dataset = data[data_name][idx, :input_size]
             self.dataset = np.append(
-                self.dataset, data[data_name][idx, -input_size + 1 :]
+                self.dataset, data[data_name][idx, -input_size + 1 :], axis=1
             )
             self.dataset = np.fft.fftshift(self.dataset)
             self._get2ch()
@@ -91,5 +91,6 @@ class Speckle(Dataset):
     def _get2ch(self):
         real_ds = np.real(self.dataset)
         imag_ds = np.imag(self.dataset)
-        self.dataset = np.vstack((real_ds, imag_ds))
+        self.dataset = np.stack((real_ds, imag_ds))
+        self.dataset = np.swapaxes(self.dataset, 0, 1)
 
