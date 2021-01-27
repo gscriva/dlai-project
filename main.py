@@ -7,7 +7,7 @@ from ignite.contrib.metrics.regression import R2Score
 from torchvision import transforms
 from tqdm import tqdm, trange
 
-from model import MultiLayerPerceptron
+from model import MultiLayerPerceptron, CNN
 from score import make_averager
 from utils import load_data
 
@@ -19,7 +19,7 @@ def main(
     input_size: int,
     batch_size: int,
     test_batch_size: int,
-    model: str = "MLP",
+    model_type: str = "MLP",
     num_workers: int = 8,
     train: bool = False,
     epochs: int = 20,
@@ -36,7 +36,12 @@ def main(
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # import model, set its parameter as double and move it to GPU (if available)
-    model = MultiLayerPerceptron(layers, 2 * input_size).to(device)
+    if model_type == "MLP":
+        model = MultiLayerPerceptron(layers, 2 * input_size).to(device)
+    elif model_type == "CNN":
+        model = CNN().to(device)
+    else:
+        raise NotImplementedError("Only MLP and CNN are accepted as model type")
     model = model.double()
 
     # import loss and optimizer
@@ -61,7 +66,7 @@ def main(
         test_batch_size,
         transform=transform,
         num_workers=num_workers,
-        model=model,
+        model=model_type,
     )
 
     best_losses = np.infty
@@ -155,16 +160,17 @@ def main(
 # test_batch_size: int, num_workers: int = 10, train: bool = False, epochs: int = 20,
 # layers: int = 3, learning_rate: float = 0.001, weight_decay: float = 0.03,
 main(
-    "dataset/train_L14_nup1np256_V4.npz",
+    "dataset/train_data_L14.npz",
     "speckleF",
     "evalues",
     15,
     500,
     1000,
     train=True,
-    epochs=500,
-    layers=6,
+    epochs=70,
+    # layers=6,
     learning_rate=0.0001,
     num_workers=0,
     weight_decay=0.0,
+    model_type="CNN",
 )
