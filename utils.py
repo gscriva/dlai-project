@@ -22,6 +22,7 @@ def load_data(
     test_batch_size: int,
     transform: transforms.transforms.Compose = None,
     num_workers: int = 10,
+    model: str = "MLP",
 ) -> tuple:
 
     train_set = Speckle(
@@ -33,6 +34,7 @@ def load_data(
         train=True,
         train_size=0.9,
         seed=0,
+        model=model,
     )
     val_set = Speckle(
         dataset_path,
@@ -43,6 +45,7 @@ def load_data(
         train=False,
         train_size=0.9,
         seed=0,
+        model=model,
     )
 
     train_loader = torch.utils.data.DataLoader(
@@ -99,7 +102,7 @@ def save_as_npz(
 
     for key in results:
         outname = key + "_" + os.path.basename(data_path)
-        # print("Saving {0} dataset as {1}".format(key, outname))
+        print("\nSaving {0} dataset as {1}".format(key, outname))
         np.savez(str(outname) + ".npz", **{el[1][:]: el[0] for el in results[key]})
     return
 
@@ -211,22 +214,3 @@ def pltdataset(plt_num: int, data: np.lib.npyio.NpzFile, keys: list) -> None:
         ax.plot(image, label="Real component")
         plt.legend()
     return
-
-
-"""
-def torch_fftshift(real, imag):
-    Compute the fftshift of Fourier data.
-
-    Args:
-        real (torch.Tensor): Real part of fft.
-        imag (torch.Tensor): Imag part of fft.
-
-    Returns:
-        tuple: real and imag part shifted.
-    
-        for dim in range(0, len(real.size())):
-        real = torch.roll(real, dims=dim, shifts=real.size(dim) // 2)
-        imag = torch.roll(imag, dims=dim, shifts=imag.size(dim) // 2)
-
-    return real, imag
-"""
