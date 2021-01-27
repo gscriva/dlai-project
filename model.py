@@ -22,3 +22,33 @@ class MultiLayerPerceptron(nn.Module):
 
     def forward(self, x):
         return self.layers(x)
+
+
+class CNN(nn.Module):
+    def __init__(self, input_size):
+        super(CNN, self).__init__()
+
+        self.conv1 = nn.Sequential(
+            nn.Conv1d(2, 32, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.Conv1d(32, 64, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.Conv1d(64, 64, kernel_size=5, stride=1, padding=2)
+            nn.ReLU(),
+            nn.Conv1d(64, 64, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.Conv1d(64, 32, kernel_size=5, stride=1, padding=2)
+            nn.ReLU(),
+        )
+
+        self.fc = nn.Sequential(
+            nn.Linear(32, 32),
+            nn.ReLU(),
+            nn.Linear(32, 1),
+        )
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.fc(x)
+        return x
+
