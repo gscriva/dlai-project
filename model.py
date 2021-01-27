@@ -1,5 +1,6 @@
 from collections import OrderedDict
 
+import torch
 import torch.nn as nn
 
 
@@ -25,7 +26,7 @@ class MultiLayerPerceptron(nn.Module):
 
 
 class CNN(nn.Module):
-    def __init__(self, input_size):
+    def __init__(self):
         super(CNN, self).__init__()
 
         self.conv1 = nn.Sequential(
@@ -39,12 +40,15 @@ class CNN(nn.Module):
             nn.ReLU(),
             nn.Conv1d(64, 32, kernel_size=5, stride=1, padding=2),
             nn.ReLU(),
+            nn.Conv1d(32, 1, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
         )
 
-        self.fc = nn.Sequential(nn.Linear(32, 32), nn.ReLU(), nn.Linear(32, 1),)
+        self.fc = nn.Sequential(nn.Linear(29, 29), nn.ReLU(), nn.Linear(29, 1),)
 
     def forward(self, x):
         x = self.conv1(x)
+        x = x.view(x.size(0), -1)
         x = self.fc(x)
         return x
 
