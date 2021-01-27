@@ -6,10 +6,23 @@ import torch
 from ignite.contrib.metrics.regression import R2Score
 from torchvision import transforms
 from tqdm import tqdm, trange
+import wandb
 
 from model import MultiLayerPerceptron, CNN
 from score import make_averager
 from utils import load_data
+
+
+wandb.init(project="dlai-project")
+
+# wandb config hyperparameters
+config = wandb.config
+config.batch_size = 500
+config.test_batch_size = 1000
+config.epochs = 100
+config.lr = 1e-3
+config.weight_decay = 0
+config.log_interval = 50
 
 
 def main(
@@ -43,10 +56,14 @@ def main(
     if model_type == "MLP":
         model = MultiLayerPerceptron(layers, 2 * input_size).to(device)
     elif model_type == "CNN":
-        model = CNN().to(device)
+        model = CNN(input_size
+        ).to(device)
     else:
         raise NotImplementedError("Only MLP and CNN are accepted as model type")
+    # Change type of weights
     model = model.double()
+    # save model parameters
+    wandb.watch(model, log="all")
 
     # import loss and optimizer
     criterion = torch.nn.MSELoss()
@@ -77,7 +94,8 @@ def main(
     valid_r2 = R2Score()
     train_r2 = R2Score()
     if train:
-        for epoch in trange(epochs, total=epochs, leave=True):
+        # for epoch in trange(epochs, total=epochs, leave=True):
+        for epoch in range(epochs):
             # mantain a running average of the loss
             train_loss_averager = make_averager()
             tqdm_iterator = tqdm(
@@ -87,7 +105,8 @@ def main(
                 leave=False,
             )
             train_r2.reset()
-            for data, target in tqdm_iterator:
+            # for data, target in tqdm_iterator:
+            for data, target in train_loader:
                 data, target = data.to(device), target.to(device)
 
                 pred = model(data)
@@ -136,6 +155,9 @@ def main(
                 # f"Validation set: Best R2 score: {valid_r2.compute():.4f}"
             )
 
+            # save loss on wandb
+            wandb.log()
+
             checkpoint_dict = {
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": opt.state_dict(),
@@ -158,6 +180,9 @@ def main(
                 )
             torch.save(model, "model1")
 
+        # save model on wandb
+        wandb.save("model.h5")
+
 
 # args = ["train_L14_nup1np256_V4.npz", "speckleF", "evalues", 30, 60, 10, True]
 # dataset_path: str, input_name: str, output_name: str, input_size: int, batch_size: int,
@@ -178,3 +203,17 @@ main(
     weight_decay=0.0,
     model_type="CNN",
 )
+
+if __name__ == "__main__":
+    main(
+        "dataset/train_data_L14.npz",
+        "speckleF",
+        "evalues",
+        15,
+        batch_size=config.batch_size,
+        test_batch_size=config.test_batch_size,
+        epochs=config.epochs,
+        learning_rate=config.lr,
+        weight_decay=config.weight_decay,
+    )
+
