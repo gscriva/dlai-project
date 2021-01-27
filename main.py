@@ -19,7 +19,7 @@ def main(
     input_size: int,
     batch_size: int,
     test_batch_size: int,
-    model: str = "MLP"
+    model: str = "MLP",
     num_workers: int = 8,
     train: bool = False,
     epochs: int = 20,
