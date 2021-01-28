@@ -135,8 +135,8 @@ dmypy.json
 *.npz
 dataset/*
 
+# wandb folder
+wandb/*
+
 # model checkpoints
 checkpoints/*
-
- # wandb files
- wandb/*
