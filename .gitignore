@@ -133,7 +133,10 @@ dmypy.json
 
 # Data
 *.npz
-dataset/data_L14.npz_old
+dataset/*
 
 # model checkpoints
 checkpoints/*
+
+ # wandb files
+ wandb/*
