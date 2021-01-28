@@ -26,29 +26,40 @@ class MultiLayerPerceptron(nn.Module):
 
 
 class CNN(nn.Module):
-    def __init__(self, input_size):
+    def __init__(self):
         super(CNN, self).__init__()
 
         self.conv1 = nn.Sequential(
-            nn.BatchNorm1d(input_size * 2 - 1),
-            nn.Conv1d(2, 32, 5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.Conv1d(32, 64, 5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.Conv1d(64, 64, 5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.Conv1d(64, 64, 5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.Conv1d(64, 32, 5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.Conv1d(32, 1, 5, stride=1, padding=2),
+            nn.Conv1d(2, 16, 5, padding=2, padding_mode="reflect"),
+            nn.BatchNorm1d(16),
             nn.ReLU(),
         )
 
-        self.fc = nn.Sequential(nn.Linear(29, 29), nn.ReLU(), nn.Linear(29, 1))
+        self.conv2 = nn.Sequential(
+            nn.Conv1d(16, 32, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm1d(16),
+            nn.ReLU(),
+            #    nn.AvgPool1d(kernel_size=3),
+        )
+
+        self.conv3 = nn.Sequential(
+            nn.Conv1d(32, 32, 3, padding=1, padding_mode="reflect"),
+            nn.BatchNorm1d(32),
+            nn.ReLU(),
+        )
+
+        self.fc = nn.Sequential(
+            nn.Linear(32 * 29, 512),
+            nn.ReLU(),
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 1),
+        )
 
     def forward(self, x):
         x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
         x = x.view(x.size(0), -1)
         x = self.fc(x)
         return x
