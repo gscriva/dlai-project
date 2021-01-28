@@ -17,12 +17,14 @@ wandb.init(project="dlai-project")
 
 # wandb config hyperparameters
 config = wandb.config
-config.batch_size = 500
-config.test_batch_size = 1000
+config.batch_size = 100
+config.test_batch_size = 200
 config.epochs = 100
-config.lr = 1e-3
-config.weight_decay = 0
+config.lr = 1e-4
+config.weight_decay = 0.0
 config.log_interval = 50
+config.num_workers = 8
+config.model_type = "CNN"
 
 
 def main(
@@ -34,7 +36,7 @@ def main(
     test_batch_size: int,
     model_type: str = "MLP",
     num_workers: int = 8,
-    train: bool = False,
+    train: bool = True,
     epochs: int = 20,
     layers: int = 3,
     learning_rate: float = 0.001,
@@ -56,14 +58,15 @@ def main(
     if model_type == "MLP":
         model = MultiLayerPerceptron(layers, 2 * input_size).to(device)
     elif model_type == "CNN":
-        model = CNN(input_size
-        ).to(device)
+        model = CNN().to(device)
     else:
         raise NotImplementedError("Only MLP and CNN are accepted as model type")
+
     # Change type of weights
     model = model.double()
+
     # save model parameters
-    wandb.watch(model, log="all")
+    wandb.watch(model)
 
     # import loss and optimizer
     criterion = torch.nn.MSELoss()
@@ -98,13 +101,16 @@ def main(
         for epoch in range(epochs):
             # mantain a running average of the loss
             train_loss_averager = make_averager()
-            tqdm_iterator = tqdm(
-                train_loader,
-                total=len(train_loader),
-                desc=f"batch [loss: None]",
-                leave=False,
-            )
+
+            # tqdm_iterator = tqdm(
+            #     train_loader,
+            #     total=len(train_loader),
+            #     desc=f"batch [loss: None]",
+            #     leave=False,
+            # )
+
             train_r2.reset()
+            model.train()
             # for data, target in tqdm_iterator:
             for data, target in train_loader:
                 data, target = data.to(device), target.to(device)
@@ -112,7 +118,6 @@ def main(
                 pred = model(data)
 
                 # pred has dim (batch_size, 1), target (batch_size)
-                # target = target.unsqueeze(1)
                 pred = pred.squeeze()
 
                 loss = criterion(pred, target)
@@ -124,10 +129,10 @@ def main(
                 train_loss_averager(loss.item())
                 train_r2.update((pred, target))
 
-                tqdm_iterator.set_description(
-                    f"train batch [avg loss: {train_loss_averager(None):.3f}]"
-                )
-                tqdm_iterator.refresh()
+                # tqdm_iterator.set_description(
+                #     f"train batch [avg loss: {train_loss_averager(None):.3f}]"
+                # )
+                # tqdm_iterator.refresh()
 
             model.eval()
             valid_loss_averager = make_averager()
@@ -139,7 +144,6 @@ def main(
                     pred = model(data)
 
                     # pred has dim (batch_size, 1)
-                    # target = target.unsqueeze(1)
                     pred = pred.squeeze()
 
                     valid_loss_averager(criterion(pred, target))
@@ -155,8 +159,13 @@ def main(
                 # f"Validation set: Best R2 score: {valid_r2.compute():.4f}"
             )
 
-            # save loss on wandb
-            wandb.log()
+            # save losses on wandb
+            wandb.log(
+                {
+                    "Validation loss": valid_loss_averager(None),
+                    "R2 score": valid_r2.compute(),
+                }
+            )
 
             checkpoint_dict = {
                 "model_state_dict": model.state_dict(),
@@ -180,29 +189,32 @@ def main(
                 )
             torch.save(model, "model1")
 
-        # save model on wandb
-        wandb.save("model.h5")
+        # save model to wandb
+        torch.save(model.state_dict(), os.path.join(wandb.run.dir, "model_final.pt"))
 
 
 # args = ["train_L14_nup1np256_V4.npz", "speckleF", "evalues", 30, 60, 10, True]
 # dataset_path: str, input_name: str, output_name: str, input_size: int, batch_size: int,
 # test_batch_size: int, num_workers: int = 10, train: bool = False, epochs: int = 20,
 # layers: int = 3, learning_rate: float = 0.001, weight_decay: float = 0.03,
-main(
-    "dataset/train_data_L14.npz",
-    "speckleF",
-    "evalues",
-    15,
-    500,
-    1000,
-    train=True,
-    epochs=70,
-    # layers=6,
-    learning_rate=0.0001,
-    # num_workers=0,
-    weight_decay=0.0,
-    model_type="CNN",
-)
+
+
+# main(
+#     "dataset/train_data_L14.npz",
+#     "speckleF",
+#     "evalues",
+#     15,
+#     500,
+#     1000,
+#     train=True,
+#     epochs=100,
+#     # layers=6,
+#     learning_rate=0.0001,
+#     # num_workers=0,
+#     weight_decay=0.0,
+#     model_type="CNN",
+# )
+
 
 if __name__ == "__main__":
     main(
@@ -215,5 +227,5 @@ if __name__ == "__main__":
         epochs=config.epochs,
         learning_rate=config.lr,
         weight_decay=config.weight_decay,
+        num_workers=config.num_workers,
     )
-
