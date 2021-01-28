@@ -47,7 +47,10 @@ class Speckle(Dataset):
         if input_size is None:
             input_size = size_ds
 
-        self._get_correct_ds(data, data_name, idx, input_size, model)
+        if data_name == "speckleF":
+            self._get_correct_ds(data, data_name, idx, input_size, model)
+        else:
+            self.dataset = data[data_name][idx, :input_size]
 
         self.evalues = data[output_name][idx]
         self.transform = transform
