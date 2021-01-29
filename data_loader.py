@@ -33,19 +33,24 @@ class Speckle(Dataset):
         """
         data = np.load(data_file)
         size_ds = len(data[output_name])
+        # len single data
+        len_data = data[data_name].shape[0]
+
         # set seed as input
         np.random.seed(seed)
         idx = np.full(size_ds, False, dtype=bool)
         idx[
             np.random.choice(size_ds, floor(size_ds * train_size), replace=False)
         ] = True
+
         # for the validation set just take the remaining indexes
         if not train:
             idx = np.logical_not(idx)
+
         # for Fourier data most of data are zeros,
         # so we will use only the non-zero components
         if input_size is None:
-            input_size = size_ds
+            input_size = len_data
 
         if data_name == "speckleF":
             self._get_correct_ds(data, data_name, idx, input_size, model)
