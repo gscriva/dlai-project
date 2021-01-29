@@ -29,38 +29,47 @@ class CNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
 
-        self.conv1 = nn.Sequential(
-            nn.Conv1d(2, 16, 5, padding=2, padding_mode="reflect"),
-            nn.BatchNorm1d(16),
-            nn.ReLU(),
+        self.conv1 = self.convlayer(1, 16, 3, padding=1)
+        self.conv2 = self.convlayer(16, 32, 3, padding=1)
+        self.conv3 = self.convlayer(32, 64, 3, padding=1)
+        self.conv4 = self.convlayer(64, 64, 3, padding=1)
+        self.conv5 = nn.Sequential(
+            self.convlayer(64, 128, 3, padding=1),
+            self.convlayer(128, 128, 3, padding=1),
+            self.convlayer(128, 256, 3, padding=1),
+            self.convlayer(256, 512, 3, padding=1),
+            self.convlayer(512, 512, 3, padding=1),
         )
 
-        self.conv2 = nn.Sequential(
-            nn.Conv1d(16, 32, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm1d(16),
-            nn.ReLU(),
-            #    nn.AvgPool1d(kernel_size=3),
-        )
+        self.fc1 = nn.Sequential(nn.Linear(512 * 256, 1),)
 
-        self.conv3 = nn.Sequential(
-            nn.Conv1d(32, 32, 3, padding=1, padding_mode="reflect"),
-            nn.BatchNorm1d(32),
+    def convlayer(
+        self,
+        input_features: int,
+        out_features: int,
+        kernel_size: int,
+        padding: int = 0,
+        stride: int = 1,
+    ):
+        return nn.Sequential(
+            nn.Conv1d(
+                input_features,
+                out_features,
+                kernel_size,
+                padding=padding,
+                padding_mode="reflect",
+            ),
+            nn.BatchNorm1d(out_features),
             nn.ReLU(),
-        )
-
-        self.fc = nn.Sequential(
-            nn.Linear(32 * 29, 512),
-            nn.ReLU(),
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Linear(256, 1),
         )
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
+        x = self.conv4(x)
+        x = self.conv5(x)
         x = x.view(x.size(0), -1)
-        x = self.fc(x)
+        x = self.fc1(x)
         return x
 
