@@ -17,9 +17,9 @@ wandb.init(project="dlai-project")
 
 # wandb config hyperparameters
 config = wandb.config
-config.batch_size = 100
-config.test_batch_size = 200
-config.epochs = 100
+config.batch_size = 500
+config.test_batch_size = 1000
+config.epochs = 10
 config.lr = 1e-4
 config.weight_decay = 0.0
 config.log_interval = 50
@@ -38,7 +38,7 @@ def main(
     num_workers: int = 8,
     train: bool = True,
     epochs: int = 20,
-    layers: int = 3,
+    layers: int = 5,
     learning_rate: float = 0.001,
     weight_decay: float = 0.03,
 ):
@@ -66,7 +66,7 @@ def main(
     model = model.double()
 
     # save model parameters
-    wandb.watch(model)
+    wandb.watch(model, log="all")
 
     # import loss and optimizer
     criterion = torch.nn.MSELoss()
@@ -102,43 +102,43 @@ def main(
             # mantain a running average of the loss
             train_loss_averager = make_averager()
 
-            # tqdm_iterator = tqdm(
-            #     train_loader,
-            #     total=len(train_loader),
-            #     desc=f"batch [loss: None]",
-            #     leave=False,
-            # )
+            tqdm_iterator = tqdm(
+                train_loader,
+                total=len(train_loader),
+                desc=f"batch [loss: None]",
+                leave=False,
+            )
 
             train_r2.reset()
             model.train()
-            # for data, target in tqdm_iterator:
-            for data, target in train_loader:
+            for data, target in tqdm_iterator:
+                # for data, target in train_loader:
                 data, target = data.to(device), target.to(device)
 
                 pred = model(data)
-
                 # pred has dim (batch_size, 1), target (batch_size)
                 pred = pred.squeeze()
 
                 loss = criterion(pred, target)
-                loss.backward()
 
-                opt.step()
+                # opt step
                 opt.zero_grad()
+                loss.backward()
+                opt.step()
 
                 train_loss_averager(loss.item())
                 train_r2.update((pred, target))
 
-                # tqdm_iterator.set_description(
-                #     f"train batch [avg loss: {train_loss_averager(None):.3f}]"
-                # )
-                # tqdm_iterator.refresh()
+                tqdm_iterator.set_description(
+                    f"train batch [avg loss: {train_loss_averager(None):.3f}]"
+                )
+                tqdm_iterator.refresh()
 
-            model.eval()
+            # model.eval()
             valid_loss_averager = make_averager()
             valid_r2.reset()
-            for data, target in valid_loader:
-                with torch.no_grad():
+            with torch.no_grad():
+                for data, target in valid_loader:
                     data, target = data.to(device), target.to(device)
 
                     pred = model(data)
@@ -162,6 +162,8 @@ def main(
             # save losses on wandb
             wandb.log(
                 {
+                    "Train loss": train_loss_averager(None),
+                    "Train R2 score": train_r2.compute(),
                     "Validation loss": valid_loss_averager(None),
                     "R2 score": valid_r2.compute(),
                 }
@@ -187,7 +189,6 @@ def main(
                 torch.save(
                     checkpoint_dict, "checkpoints/model-epoch-{}.pth".format(epoch)
                 )
-            torch.save(model, "model1")
 
         # save model to wandb
         torch.save(model.state_dict(), os.path.join(wandb.run.dir, "model_final.pt"))
@@ -219,7 +220,7 @@ def main(
 if __name__ == "__main__":
     main(
         "dataset/train_data_L14.npz",
-        "speckleF",
+        "speckleR",
         "evalues",
         15,
         batch_size=config.batch_size,
@@ -228,4 +229,5 @@ if __name__ == "__main__":
         learning_rate=config.lr,
         weight_decay=config.weight_decay,
         num_workers=config.num_workers,
+        model_type=config.model_type,
     )
