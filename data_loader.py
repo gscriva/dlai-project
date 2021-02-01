@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from math import floor
 from torch.utils.data import Dataset
 from torchvision import transforms

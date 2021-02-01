@@ -11,36 +11,19 @@ import wandb
 from model import MultiLayerPerceptron, CNN
 from score import make_averager
 from utils import load_data, Normalize
-from parser import parser()
-
-
-wandb.init(project="dlai-project")
-
-# wandb config hyperparameters
-config = wandb.config
-config.batch_size = 500
-config.test_batch_size = 1000
-config.epochs = 10
-config.lr = 1e-4
-config.weight_decay = 0.0
-config.log_interval = 50
-config.num_workers = 8
-config.model_type = "CNN"
+from parser import parser
 
 
 def main():
-    # Initialize directories
-    os.makedirs("checkpoints", exist_ok=True)
-
     # Load parser
-    parser = parser()
-    args = parser.parse_args()
-    
+    pars = parser()
+    args = pars.parse_args()
+
     # Fixed parameters
     OUTPUT_NAME = "evalues"
     LAYERS = 5
-    WEIGHT_DECAY = 0.
-    # magic values from mean and std of the whole dataset
+    WEIGHT_DECAY = 0.0
+    # magic values from mean and std of the whole dataset (L=14)
     MEAN = 0.13343159690024803
     STD = 0.6857376310390265
 
@@ -56,6 +39,9 @@ def main():
     num_workers = args.num_workers
     train = args.train
     save_wandb = args.save_wandb
+
+    # Initialize directories
+    os.makedirs("checkpoints/{0}".format(model_type), exist_ok=True)
 
     # limit number of CPUs
     torch.set_num_interop_threads(num_workers)
@@ -112,10 +98,10 @@ def main():
     train_loader, valid_loader = load_data(
         dataset_path,
         input_name,
+        OUTPUT_NAME,
         input_size,
         batch_size,
         test_batch_size,
-        output_name = OUTPUT_NAME, 
         transform=transform,
         num_workers=num_workers,
         model=model_type,
@@ -187,7 +173,8 @@ def main():
                 f"Validation set: R2 score: {valid_r2.compute():.4f}\n"
             )
 
-            if wandb:# save losses on wandb
+            if save_wandb:
+                # save losses on wandb
                 wandb.log(
                     {
                         "Train loss": train_loss_averager(None),
@@ -210,16 +197,22 @@ def main():
             # Save checkpoint every epoch and when a better model is produced
             if val_loss < best_losses:
                 best_losses = val_loss
-                torch.save(checkpoint_dict, "checkpoints/{0}/best-model.pth".format(model_type))
+                torch.save(
+                    checkpoint_dict, "checkpoints/{0}/best-model.pth".format(model_type)
+                )
 
             # save model on each epoch
             if epoch % 1 == 0:
                 torch.save(
-                    checkpoint_dict, "checkpoints/{0}/model-epoch-{1}.pth".format(model_type, epoch)
+                    checkpoint_dict,
+                    "checkpoints/{0}/model-epoch-{1}.pth".format(model_type, epoch),
                 )
 
-        # save model to wandb
-        torch.save(model.state_dict(), os.path.join(wandb.run.dir, "model_final.pt"))
+        if save_wandb:
+            # save model to wandb
+            torch.save(
+                model.state_dict(), os.path.join(wandb.run.dir, "model_final.pt")
+            )
 
 
 if __name__ == "__main__":
