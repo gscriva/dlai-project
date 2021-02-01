@@ -11,6 +11,7 @@ import wandb
 from model import MultiLayerPerceptron, CNN
 from score import make_averager
 from utils import load_data
+from parser import parser()
 
 
 wandb.init(project="dlai-project")
@@ -27,25 +28,30 @@ config.num_workers = 8
 config.model_type = "CNN"
 
 
-def main(
-    dataset_path: str,
-    input_name: str,
-    output_name: str,
-    input_size: int,
-    batch_size: int,
-    test_batch_size: int,
-    model_type: str = "MLP",
-    num_workers: int = 8,
-    train: bool = True,
-    epochs: int = 20,
-    layers: int = 5,
-    learning_rate: float = 0.001,
-    weight_decay: float = 0.03,
-):
+def main():
     # Initialize directories
     os.makedirs("checkpoints", exist_ok=True)
 
-    # TODO add parser with args
+    # Load parser
+    parser = parser()
+    args = parser.parse_args()
+    
+    # Fixed parameters
+    OUTPUT_NAME = "evalues"
+    LAYERS = 5
+    WEIGHT_DECAY = 0.
+
+    # Retrieve argument from parser
+    dataset_path = args.data_dir
+    input_name = args.input_name
+    input_size = args.input_size
+    batch_size = args.batch_size
+    test_batch_size = args.test_batch_size
+    model_type = args.model_type
+    epochs = args.epochs
+    learning_rate = args.learning_rate
+    num_workers = args.num_workers
+    train = args.train
 
     # limit number of CPUs
     torch.set_num_interop_threads(num_workers)
@@ -56,7 +62,7 @@ def main(
 
     # import model, set its parameter as double and move it to GPU (if available)
     if model_type == "MLP":
-        model = MultiLayerPerceptron(layers, 2 * input_size).to(device)
+        model = MultiLayerPerceptron(LAYERS, 2 * input_size).to(device)
     elif model_type == "CNN":
         model = CNN().to(device)
     else:
@@ -71,7 +77,7 @@ def main(
     # import loss and optimizer
     criterion = torch.nn.MSELoss()
     opt = torch.optim.Adam(
-        model.parameters(), lr=learning_rate, weight_decay=weight_decay
+        model.parameters(), lr=learning_rate, weight_decay=WEIGHT_DECAY
     )
 
     # define transform to apply
@@ -84,10 +90,10 @@ def main(
     train_loader, valid_loader = load_data(
         dataset_path,
         input_name,
-        output_name,
         input_size,
         batch_size,
         test_batch_size,
+        output_name = OUTPUT_NAME, 
         transform=transform,
         num_workers=num_workers,
         model=model_type,

@@ -21,7 +21,7 @@ def load_data(
     batch_size: int,
     test_batch_size: int,
     transform: transforms.transforms.Compose = None,
-    num_workers: int = 10,
+    num_workers: int = 8,
     model: str = "MLP",
 ) -> tuple:
 

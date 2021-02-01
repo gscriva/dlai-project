@@ -4,6 +4,7 @@ import argparse
 def parser():
     # Parse arguments and prepare program
     parser = argparse.ArgumentParser(description="Training Custom NN")
+
     parser.add_argument(
         "--resume",
         default="",
