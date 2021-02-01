@@ -10,13 +10,14 @@ class MultiLayerPerceptron(nn.Module):
     def __init__(self, layers, input_size):
         super(MultiLayerPerceptron, self).__init__()
 
-        sizes = [input_size] + [150] * layers + [1]
+        sizes = [input_size] + [128] * layers + [1]
 
-        fc_layers = OrderedDict({"batch1": nn.BatchNorm1d(input_size)})
+        fc_layers = OrderedDict()
         for i in range(len(sizes) - 1):
             fc_layers["linear{0}".format(i)] = nn.Linear(sizes[i], sizes[i + 1])
             if i == len(sizes) - 2:
                 continue
+            fc_layers["batch{0}".format(i)] = nn.BatchNorm1d(sizes[i + 1])
             fc_layers["relu{0}".format(i)] = nn.ReLU()
 
         self.layers = nn.Sequential(fc_layers)
