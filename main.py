@@ -10,7 +10,7 @@ import wandb
 
 from model import MultiLayerPerceptron, CNN
 from score import make_averager
-from utils import load_data
+from utils import load_data, Normalize
 from parser import parser()
 
 
@@ -40,6 +40,9 @@ def main():
     OUTPUT_NAME = "evalues"
     LAYERS = 5
     WEIGHT_DECAY = 0.
+    # magic values from mean and std of the whole dataset
+    MEAN = 0.13343159690024803
+    STD = 0.6857376310390265
 
     # Retrieve argument from parser
     dataset_path = args.data_dir
@@ -98,8 +101,10 @@ def main():
     )
 
     # define transform to apply
+    normalize = Normalize(MEAN, STD)
     transform_list = [
         torch.tensor,
+        normalize,
     ]
     transform = transforms.Compose(transform_list)
 
