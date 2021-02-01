@@ -1,7 +1,7 @@
 import argparse
 
 
-def main_parser():
+def parser():
     # Parse arguments and prepare program
     parser = argparse.ArgumentParser(description="Training Custom NN")
     parser.add_argument(
@@ -34,10 +34,10 @@ def main_parser():
     )
     parser.add_argument(
         "--epochs",
-        default=100,
+        default=2,
         type=int,
         metavar="N",
-        help="number of epochs (default: 100)",
+        help="number of epochs (default: 2)",
     )
     parser.add_argument(
         "--learning_rate",
