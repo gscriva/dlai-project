@@ -13,11 +13,18 @@ def parser():
         help="path to .pth file checkpoint (default: none)",
     )
     parser.add_argument(
-        "-e",
-        "--evaluate",
-        dest="evaluate",
+        "-t",
+        "--train",
+        dest="train",
         action="store_true",
-        help="use this flag to validate without training",
+        help="use this flag to train the model",
+    )
+    parser.add_argument(
+        "-w",
+        "--wandb",
+        dest="save_wandb",
+        action="store_true",
+        help="use this flag to save the model on wandb",
     )
     parser.add_argument(
         "--batch_size",

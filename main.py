@@ -52,6 +52,7 @@ def main():
     learning_rate = args.learning_rate
     num_workers = args.num_workers
     train = args.train
+    save_wandb = args.save_wandb
 
     # limit number of CPUs
     torch.set_num_interop_threads(num_workers)
@@ -71,8 +72,23 @@ def main():
     # Change type of weights
     model = model.double()
 
-    # save model parameters
-    wandb.watch(model, log="all")
+    if save_wandb:
+        # initialize wandb remote repo
+        wandb.init(project="dlai-project")
+
+        # wandb config hyperparameters
+        config = wandb.config
+        config.batch_size = 500
+        config.test_batch_size = 1000
+        config.epochs = 10
+        config.lr = 1e-4
+        config.weight_decay = 0.0
+        config.log_interval = 50
+        config.num_workers = 8
+        config.model_type = "CNN"     
+
+        # save model parameters
+        wandb.watch(model, log="all")
 
     # import loss and optimizer
     criterion = torch.nn.MSELoss()
@@ -185,15 +201,15 @@ def main():
             }
 
             val_loss = valid_loss_averager(None)
-            # Save checkpoint every 5 epochs or when a better model is produced
+            # Save checkpoint every epoch and when a better model is produced
             if val_loss < best_losses:
                 best_losses = val_loss
-                torch.save(checkpoint_dict, "checkpoints/best-model.pth")
+                torch.save(checkpoint_dict, "checkpoints/{0}/best-model.pth".format(model_type))
 
             # save model on each epoch
             if epoch % 1 == 0:
                 torch.save(
-                    checkpoint_dict, "checkpoints/model-epoch-{}.pth".format(epoch)
+                    checkpoint_dict, "checkpoints/{0}/model-epoch-{1}.pth".format(model_type, epoch)
                 )
 
         # save model to wandb
@@ -224,16 +240,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main(
-        "dataset/train_data_L14.npz",
-        "speckleR",
-        "evalues",
-        15,
-        batch_size=config.batch_size,
-        test_batch_size=config.test_batch_size,
-        epochs=config.epochs,
-        learning_rate=config.lr,
-        weight_decay=config.weight_decay,
-        num_workers=config.num_workers,
-        model_type=config.model_type,
-    )
+    main()
