@@ -10,7 +10,7 @@ def parser():
         default="",
         type=str,
         metavar="PATH",
-        help="path to .pth file checkpoint (default: none)",
+        help="path to .pth file checkpoint (default: None)",
     )
     parser.add_argument(
         "-t",

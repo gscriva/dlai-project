@@ -78,14 +78,15 @@ def main():
 
         # wandb config hyperparameters
         config = wandb.config
-        config.batch_size = 500
-        config.test_batch_size = 1000
-        config.epochs = 10
-        config.lr = 1e-4
-        config.weight_decay = 0.0
+        config.batch_size = batch_size
+        config.test_batch_size = test_batch_size
+        config.epochs = epochs
+        config.lr = learning_rate
+        config.weight_decay = WEIGHT_DECAY
+        # parameters for wandb update
         config.log_interval = 50
-        config.num_workers = 8
-        config.model_type = "CNN"     
+        config.num_workers = num_workers
+        config.model_type = model_type
 
         # save model parameters
         wandb.watch(model, log="all")
@@ -143,9 +144,11 @@ def main():
 
                 loss = criterion(pred, target)
 
-                # opt step
+                # backward
                 opt.zero_grad()
                 loss.backward()
+
+                # Optimizer step
                 opt.step()
 
                 train_loss_averager(loss.item())
@@ -177,19 +180,17 @@ def main():
                 f"Train set: R2 score: {train_r2.compute():.4f}\n"
                 f"Validation set: Average loss: {valid_loss_averager(None):.4f}\n"
                 f"Validation set: R2 score: {valid_r2.compute():.4f}\n"
-                # f"Validation set: Best loss: {best_losses:.4f}"
-                # f"Validation set: Best R2 score: {valid_r2.compute():.4f}"
             )
 
-            # save losses on wandb
-            wandb.log(
-                {
-                    "Train loss": train_loss_averager(None),
-                    "Train R2 score": train_r2.compute(),
-                    "Validation loss": valid_loss_averager(None),
-                    "R2 score": valid_r2.compute(),
-                }
-            )
+            if wandb:# save losses on wandb
+                wandb.log(
+                    {
+                        "Train loss": train_loss_averager(None),
+                        "Train R2 score": train_r2.compute(),
+                        "Validation loss": valid_loss_averager(None),
+                        "R2 score": valid_r2.compute(),
+                    }
+                )
 
             checkpoint_dict = {
                 "model_state_dict": model.state_dict(),
@@ -214,29 +215,6 @@ def main():
 
         # save model to wandb
         torch.save(model.state_dict(), os.path.join(wandb.run.dir, "model_final.pt"))
-
-
-# args = ["train_L14_nup1np256_V4.npz", "speckleF", "evalues", 30, 60, 10, True]
-# dataset_path: str, input_name: str, output_name: str, input_size: int, batch_size: int,
-# test_batch_size: int, num_workers: int = 10, train: bool = False, epochs: int = 20,
-# layers: int = 3, learning_rate: float = 0.001, weight_decay: float = 0.03,
-
-
-# main(
-#     "dataset/train_data_L14.npz",
-#     "speckleF",
-#     "evalues",
-#     15,
-#     500,
-#     1000,
-#     train=True,
-#     epochs=100,
-#     # layers=6,
-#     learning_rate=0.0001,
-#     # num_workers=0,
-#     weight_decay=0.0,
-#     model_type="CNN",
-# )
 
 
 if __name__ == "__main__":
