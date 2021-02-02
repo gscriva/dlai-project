@@ -97,7 +97,7 @@ def main(
     valid_r2 = R2Score()
     train_r2 = R2Score()
     if train:
-        # for epoch in trange(epochs, total=epochs, leave=True):
+        # for epoch in trange(epochs, total=epochs, leave=False):
         for epoch in range(epochs):
             # mantain a running average of the loss
             train_loss_averager = make_averager()
@@ -121,11 +121,15 @@ def main(
 
                 loss = criterion(pred, target)
 
-                # opt step
+                # backpropagation
                 opt.zero_grad()
                 loss.backward()
+
+                # one optimizer step
                 opt.step()
 
+                # update loss and R2 values iteratively
+                # WARNING the computed values are means over the training
                 train_loss_averager(loss.item())
                 train_r2.update((pred, target))
 
@@ -134,7 +138,10 @@ def main(
                 )
                 tqdm_iterator.refresh()
 
-            # model.eval()
+            # set model to evaluation mode
+            model.eval()
+
+            # initialize loss and R2 for validation set
             valid_loss_averager = make_averager()
             valid_r2.reset()
             with torch.no_grad():
@@ -146,6 +153,7 @@ def main(
                     # pred has dim (batch_size, 1)
                     pred = pred.squeeze()
 
+                    # update loss and R2 values iteratively
                     valid_loss_averager(criterion(pred, target))
                     valid_r2.update((pred, target))
 
@@ -222,7 +230,7 @@ if __name__ == "__main__":
         "dataset/train_data_L14.npz",
         "speckleR",
         "evalues",
-        15,
+        None,
         batch_size=config.batch_size,
         test_batch_size=config.test_batch_size,
         epochs=config.epochs,
