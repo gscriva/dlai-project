@@ -41,7 +41,7 @@ def main():
     save_wandb = args.save_wandb
 
     # Initialize directories
-    os.makedirs("checkpoints/{0}".format(model_type), exist_ok=True)
+    os.makedirs("checkpoints/{0}/{1}".format(model_type, input_size - 1), exist_ok=True)
 
     # limit number of CPUs
     torch.set_num_interop_threads(num_workers)
@@ -150,7 +150,7 @@ def main():
                 )
                 tqdm_iterator.refresh()
 
-            # model.eval()
+            model.eval()
             valid_loss_averager = make_averager()
             valid_r2.reset()
             with torch.no_grad():
@@ -198,7 +198,10 @@ def main():
             if val_loss < best_losses:
                 best_losses = val_loss
                 torch.save(
-                    checkpoint_dict, "checkpoints/{0}/best-model.pth".format(model_type)
+                    checkpoint_dict,
+                    "checkpoints/{0}/{1}/best-model.pth".format(
+                        model_type, input_size - 1
+                    ),
                 )
 
             # save model on each epoch
