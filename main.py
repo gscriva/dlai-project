@@ -41,7 +41,9 @@ def main():
     save_wandb = args.save_wandb
 
     # Initialize directories
-    os.makedirs("checkpoints/{0}/{1}".format(model_type, input_size - 1), exist_ok=True)
+    os.makedirs(
+        "checkpoints/{0}/L_{1}".format(model_type, input_size - 1), exist_ok=True
+    )
 
     # limit number of CPUs
     torch.set_num_interop_threads(num_workers)
@@ -72,10 +74,10 @@ def main():
         config.epochs = epochs
         config.lr = learning_rate
         config.weight_decay = WEIGHT_DECAY
-        # parameters for wandb update
-        config.log_interval = 50
         config.num_workers = num_workers
         config.model_type = model_type
+        # parameter for wandb update
+        config.log_interval = 5
 
         # save model parameters
         wandb.watch(model, log="all")
@@ -185,8 +187,8 @@ def main():
                     {
                         "Train loss": train_loss_averager(None),
                         "Train R2 score": train_r2.compute(),
-                        "Validation loss": valid_loss_averager(None),
-                        "R2 score": valid_r2.compute(),
+                        "Val loss": valid_loss_averager(None),
+                        "Val R2 score": valid_r2.compute(),
                     }
                 )
 
@@ -205,16 +207,18 @@ def main():
                 best_losses = val_loss
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/{1}/best-model.pth".format(
+                    "checkpoints/{0}/L_{1}/best-model.pth".format(
                         model_type, input_size - 1
                     ),
                 )
 
-            # save model on each epoch
-            if epoch % 1 == 0:
+            # save model every five epochs
+            if epoch % 5 == 0:
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/model-epoch-{1}.pth".format(model_type, epoch),
+                    "checkpoints/{0}/L_{1}/model-epoch-{2}.pth".format(
+                        model_type, input_size - 1, epoch
+                    ),
                 )
 
         if save_wandb:
