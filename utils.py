@@ -187,6 +187,21 @@ def split_ds(datas: list, seed: int = 0, test_size: float = 0.2) -> dict:
     return data_dict
 
 
+def get_mean_std(input_size):
+    if input_size == 15:
+        mean = 0.13343159690024803
+        std = 0.6857376310390265
+    elif input_size == 29:
+        mean = 0.06862209217371833
+        std = 0.47665849255227033
+    elif input_size == 57:
+        mean = 0.03522628768881963
+        std = 0.3289505151231929
+    else:
+        raise NotImplementedError("No mean/std for this dataset")
+    return mean, std
+
+
 class Normalize(nn.Module):
     def __init__(self, mean, std):
         super(Normalize, self).__init__()
