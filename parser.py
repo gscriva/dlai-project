@@ -98,7 +98,7 @@ def parser():
     )
     parser.add_argument(
         "--model_type",
-        default="CNN",
+        default="MLP",
         type=str,
         metavar="string",
         help="type of the model to train/eval",
