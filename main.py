@@ -18,6 +18,7 @@ def main():
     # Load parser
     pars = parser()
     args = pars.parse_args()
+    print("Arguments:\n{}".format(args))
 
     # Fixed parameters
     OUTPUT_NAME = "evalues"
