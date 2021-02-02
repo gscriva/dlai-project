@@ -27,35 +27,23 @@ def main():
     MEAN = 0.13343159690024803
     STD = 0.6857376310390265
 
-    # Retrieve argument from parser
-    dataset_path = args.data_dir
-    input_name = args.input_name
-    input_size = args.input_size
-    batch_size = args.batch_size
-    test_batch_size = args.test_batch_size
-    model_type = args.model_type
-    epochs = args.epochs
-    learning_rate = args.learning_rate
-    num_workers = args.num_workers
-    train = args.train
-    save_wandb = args.save_wandb
-
     # Initialize directories
     os.makedirs(
-        "checkpoints/{0}/L_{1}".format(model_type, input_size - 1), exist_ok=True
+        "checkpoints/{0}/L_{1}".format(args.model_type, args.input_size - 1),
+        exist_ok=True,
     )
 
     # limit number of CPUs
-    torch.set_num_interop_threads(num_workers)
-    torch.set_num_threads(num_workers)
+    torch.set_num_interop_threads(args.num_workers)
+    torch.set_num_threads(args.num_workers)
 
     # check if GPU is available
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # import model, set its parameter as double and move it to GPU (if available)
-    if model_type == "MLP":
-        model = MultiLayerPerceptron(LAYERS, 2 * input_size).to(device)
-    elif model_type == "CNN":
+    if args.model_type == "MLP":
+        model = MultiLayerPerceptron(LAYERS, 2 * args.input_size).to(device)
+    elif args.model_type == "CNN":
         model = CNN().to(device)
     else:
         raise NotImplementedError("Only MLP and CNN are accepted as model type")
@@ -63,19 +51,19 @@ def main():
     # Change type of weights
     model = model.double()
 
-    if save_wandb:
+    if args.save_wandb:
         # initialize wandb remote repo
         wandb.init(project="dlai-project")
 
         # wandb config hyperparameters
         config = wandb.config
-        config.batch_size = batch_size
-        config.test_batch_size = test_batch_size
-        config.epochs = epochs
-        config.lr = learning_rate
+        config.batch_size = args.batch_size
+        config.test_batch_size = args.test_batch_size
+        config.epochs = args.epochs
+        config.lr = args.learning_rate
         config.weight_decay = WEIGHT_DECAY
-        config.num_workers = num_workers
-        config.model_type = model_type
+        config.num_workers = args.num_workers
+        config.model_type = args.model_type
         # parameter for wandb update
         config.log_interval = 5
 
@@ -85,7 +73,7 @@ def main():
     # import loss and optimizer
     criterion = torch.nn.MSELoss()
     opt = torch.optim.Adam(
-        model.parameters(), lr=learning_rate, weight_decay=WEIGHT_DECAY
+        model.parameters(), lr=args.learning_rate, weight_decay=WEIGHT_DECAY
     )
 
     # define transform to apply
@@ -98,23 +86,44 @@ def main():
 
     # load training and validation dataset
     train_loader, valid_loader = load_data(
-        dataset_path,
-        input_name,
+        args.data_dir,
+        args.input_name,
         OUTPUT_NAME,
-        input_size,
-        batch_size,
-        test_batch_size,
+        args.input_size,
+        args.batch_size,
+        args.test_batch_size,
         transform=transform,
-        num_workers=num_workers,
-        model=model_type,
+        num_workers=args.num_workers,
+        model=args.model_type,
     )
 
+    # initialize R2 score class
     best_losses = np.infty
     valid_r2 = R2Score()
     train_r2 = R2Score()
-    if train:
+
+    if args.train:
+        # initialize start epoch
+        start_epoch = 0
+        # Resume training if checkpoint path is given
+        if args.resume:
+            if os.path.isfile(args.resume):
+                print("Loading checkpoint {}...".format(args.resume))
+                checkpoint = torch.load(
+                    args.resume, map_location=lambda storage, loc: storage
+                )
+                start_epoch = checkpoint["epoch"]
+                model.load_state_dict(checkpoint["model_state_dict"])
+                criterion.load_state_dict(checkpoint["optimizer_state_dict"])
+                best_losses = checkpoint["best_losses"]
+
+                print("Finished loading checkpoint.")
+                print("Resuming from epoch {0}".format(start_epoch))
+            else:
+                raise FileNotFoundError("File {0} not found".format(args.resume))
+
         # for epoch in trange(epochs, total=epochs, leave=False):
-        for epoch in range(epochs):
+        for epoch in range(start_epoch, args.epochs):
             # mantain a running average of the loss
             train_loss_averager = make_averager()
 
@@ -160,6 +169,7 @@ def main():
             # initialize loss and R2 for validation set
             valid_loss_averager = make_averager()
             valid_r2.reset()
+
             with torch.no_grad():
                 for data, target in valid_loader:
                     data, target = data.to(device), target.to(device)
@@ -181,7 +191,7 @@ def main():
                 f"Validation set: R2 score: {valid_r2.compute():.4f}\n"
             )
 
-            if save_wandb:
+            if args.save_wandb:
                 # save losses on wandb
                 wandb.log(
                     {
@@ -199,6 +209,8 @@ def main():
                 "best_losses": best_losses,
                 "train_loss": train_loss_averager(None),
                 "validate_loss": valid_loss_averager(None),
+                "Train_R2Score": train_r2.compute(),
+                "Val_R2Score": valid_r2.compute(),
             }
 
             val_loss = valid_loss_averager(None)
@@ -208,7 +220,7 @@ def main():
                 torch.save(
                     checkpoint_dict,
                     "checkpoints/{0}/L_{1}/best-model.pth".format(
-                        model_type, input_size - 1
+                        args.model_type, args.input_size - 1
                     ),
                 )
 
@@ -217,11 +229,11 @@ def main():
                 torch.save(
                     checkpoint_dict,
                     "checkpoints/{0}/L_{1}/model-epoch-{2}.pth".format(
-                        model_type, input_size - 1, epoch
+                        args.model_type, args.input_size - 1, epoch
                     ),
                 )
 
-        if save_wandb:
+        if args.save_wandb:
             # save model to wandb
             torch.save(
                 model.state_dict(), os.path.join(wandb.run.dir, "model_final.pt")
