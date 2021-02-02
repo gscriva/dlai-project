@@ -5,6 +5,7 @@ from typing import Any, Callable
 
 import numpy as np
 import torch
+import torch.nn as nn
 from torchvision import transforms
 import matplotlib.pyplot as plt
 import tqdm
@@ -21,7 +22,7 @@ def load_data(
     batch_size: int,
     test_batch_size: int,
     transform: transforms.transforms.Compose = None,
-    num_workers: int = 10,
+    num_workers: int = 8,
     model: str = "MLP",
 ) -> tuple:
 
@@ -184,6 +185,18 @@ def split_ds(datas: list, seed: int = 0, test_size: float = 0.2) -> dict:
         data_dict["train"].append((data[0][np.logical_not(idx), ...], data[1]))
         data_dict["test"].append((data[0][idx, ...], data[1]))
     return data_dict
+
+
+class Normalize(nn.Module):
+    def __init__(self, mean, std):
+        super(Normalize, self).__init__()
+        self.mean = torch.tensor(mean)
+        self.std = torch.tensor(std)
+
+    def __call__(self, x):
+        x = x - self.mean
+        x = x / self.std
+        return x
 
 
 ##################### PLOT FUNCTIONS ########################

@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from math import floor
 from torch.utils.data import Dataset
 from torchvision import transforms
@@ -67,9 +68,11 @@ class Speckle(Dataset):
     def __getitem__(self, idx):
         image = self.dataset[idx, ...]
         evalues = self.evalues[idx]
+
         if self.transform:
             image = self.transform(image)
-            evalues = self.transform(evalues)
+
+        evalues = torch.tensor(evalues)
         return (image, evalues)
 
     def _get_correct_ds(self, data, data_name, idx, input_size, model):

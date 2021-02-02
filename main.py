@@ -10,42 +10,38 @@ import wandb
 
 from model import MultiLayerPerceptron, CNN
 from score import make_averager
-from utils import load_data
+from utils import load_data, Normalize
+from parser import parser
 
 
-wandb.init(project="dlai-project")
+def main():
+    # Load parser
+    pars = parser()
+    args = pars.parse_args()
 
-# wandb config hyperparameters
-config = wandb.config
-config.batch_size = 500
-config.test_batch_size = 1000
-config.epochs = 10
-config.lr = 1e-4
-config.weight_decay = 0.0
-config.log_interval = 50
-config.num_workers = 8
-config.model_type = "CNN"
+    # Fixed parameters
+    OUTPUT_NAME = "evalues"
+    LAYERS = 5
+    WEIGHT_DECAY = 0.0
+    # magic values from mean and std of the whole dataset (L=14)
+    MEAN = 0.13343159690024803
+    STD = 0.6857376310390265
 
+    # Retrieve argument from parser
+    dataset_path = args.data_dir
+    input_name = args.input_name
+    input_size = args.input_size
+    batch_size = args.batch_size
+    test_batch_size = args.test_batch_size
+    model_type = args.model_type
+    epochs = args.epochs
+    learning_rate = args.learning_rate
+    num_workers = args.num_workers
+    train = args.train
+    save_wandb = args.save_wandb
 
-def main(
-    dataset_path: str,
-    input_name: str,
-    output_name: str,
-    input_size: int,
-    batch_size: int,
-    test_batch_size: int,
-    model_type: str = "MLP",
-    num_workers: int = 8,
-    train: bool = True,
-    epochs: int = 20,
-    layers: int = 5,
-    learning_rate: float = 0.001,
-    weight_decay: float = 0.03,
-):
     # Initialize directories
-    os.makedirs("checkpoints", exist_ok=True)
-
-    # TODO add parser with args
+    os.makedirs("checkpoints/{0}/{1}".format(model_type, input_size - 1), exist_ok=True)
 
     # limit number of CPUs
     torch.set_num_interop_threads(num_workers)
@@ -56,7 +52,7 @@ def main(
 
     # import model, set its parameter as double and move it to GPU (if available)
     if model_type == "MLP":
-        model = MultiLayerPerceptron(layers, 2 * input_size).to(device)
+        model = MultiLayerPerceptron(LAYERS, 2 * input_size).to(device)
     elif model_type == "CNN":
         model = CNN().to(device)
     else:
@@ -65,18 +61,36 @@ def main(
     # Change type of weights
     model = model.double()
 
-    # save model parameters
-    wandb.watch(model, log="all")
+    if save_wandb:
+        # initialize wandb remote repo
+        wandb.init(project="dlai-project")
+
+        # wandb config hyperparameters
+        config = wandb.config
+        config.batch_size = batch_size
+        config.test_batch_size = test_batch_size
+        config.epochs = epochs
+        config.lr = learning_rate
+        config.weight_decay = WEIGHT_DECAY
+        # parameters for wandb update
+        config.log_interval = 50
+        config.num_workers = num_workers
+        config.model_type = model_type
+
+        # save model parameters
+        wandb.watch(model, log="all")
 
     # import loss and optimizer
     criterion = torch.nn.MSELoss()
     opt = torch.optim.Adam(
-        model.parameters(), lr=learning_rate, weight_decay=weight_decay
+        model.parameters(), lr=learning_rate, weight_decay=WEIGHT_DECAY
     )
 
     # define transform to apply
+    normalize = Normalize(MEAN, STD)
     transform_list = [
         torch.tensor,
+        normalize,
     ]
     transform = transforms.Compose(transform_list)
 
@@ -84,7 +98,7 @@ def main(
     train_loader, valid_loader = load_data(
         dataset_path,
         input_name,
-        output_name,
+        OUTPUT_NAME,
         input_size,
         batch_size,
         test_batch_size,
@@ -163,19 +177,18 @@ def main(
                 f"Train set: R2 score: {train_r2.compute():.4f}\n"
                 f"Validation set: Average loss: {valid_loss_averager(None):.4f}\n"
                 f"Validation set: R2 score: {valid_r2.compute():.4f}\n"
-                # f"Validation set: Best loss: {best_losses:.4f}"
-                # f"Validation set: Best R2 score: {valid_r2.compute():.4f}"
             )
 
-            # save losses on wandb
-            wandb.log(
-                {
-                    "Train loss": train_loss_averager(None),
-                    "Train R2 score": train_r2.compute(),
-                    "Validation loss": valid_loss_averager(None),
-                    "R2 score": valid_r2.compute(),
-                }
-            )
+            if save_wandb:
+                # save losses on wandb
+                wandb.log(
+                    {
+                        "Train loss": train_loss_averager(None),
+                        "Train R2 score": train_r2.compute(),
+                        "Validation loss": valid_loss_averager(None),
+                        "R2 score": valid_r2.compute(),
+                    }
+                )
 
             checkpoint_dict = {
                 "model_state_dict": model.state_dict(),
@@ -187,55 +200,29 @@ def main(
             }
 
             val_loss = valid_loss_averager(None)
-            # Save checkpoint every 5 epochs or when a better model is produced
+            # Save checkpoint every epoch and when a better model is produced
             if val_loss < best_losses:
                 best_losses = val_loss
-                torch.save(checkpoint_dict, "checkpoints/best-model.pth")
+                torch.save(
+                    checkpoint_dict,
+                    "checkpoints/{0}/{1}/best-model.pth".format(
+                        model_type, input_size - 1
+                    ),
+                )
 
             # save model on each epoch
             if epoch % 1 == 0:
                 torch.save(
-                    checkpoint_dict, "checkpoints/model-epoch-{}.pth".format(epoch)
+                    checkpoint_dict,
+                    "checkpoints/{0}/model-epoch-{1}.pth".format(model_type, epoch),
                 )
 
-        # save model to wandb
-        torch.save(model.state_dict(), os.path.join(wandb.run.dir, "model_final.pt"))
-
-
-# args = ["train_L14_nup1np256_V4.npz", "speckleF", "evalues", 30, 60, 10, True]
-# dataset_path: str, input_name: str, output_name: str, input_size: int, batch_size: int,
-# test_batch_size: int, num_workers: int = 10, train: bool = False, epochs: int = 20,
-# layers: int = 3, learning_rate: float = 0.001, weight_decay: float = 0.03,
-
-
-# main(
-#     "dataset/train_data_L14.npz",
-#     "speckleF",
-#     "evalues",
-#     15,
-#     500,
-#     1000,
-#     train=True,
-#     epochs=100,
-#     # layers=6,
-#     learning_rate=0.0001,
-#     # num_workers=0,
-#     weight_decay=0.0,
-#     model_type="CNN",
-# )
+        if save_wandb:
+            # save model to wandb
+            torch.save(
+                model.state_dict(), os.path.join(wandb.run.dir, "model_final.pt")
+            )
 
 
 if __name__ == "__main__":
-    main(
-        "dataset/train_data_L14.npz",
-        "speckleR",
-        "evalues",
-        None,
-        batch_size=config.batch_size,
-        test_batch_size=config.test_batch_size,
-        epochs=config.epochs,
-        learning_rate=config.lr,
-        weight_decay=config.weight_decay,
-        num_workers=config.num_workers,
-        model_type=config.model_type,
-    )
+    main()
