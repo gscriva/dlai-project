@@ -120,7 +120,7 @@ def main():
                 )
                 start_epoch = checkpoint["epoch"]
                 model.load_state_dict(checkpoint["model_state_dict"])
-                criterion.load_state_dict(checkpoint["optimizer_state_dict"])
+                opt.load_state_dict(checkpoint["optimizer_state_dict"])
                 best_losses = checkpoint["best_losses"]
                 train_loss = checkpoint["train_loss"]
                 val_loss = checkpoint["validate_loss"]
@@ -175,11 +175,9 @@ def main():
 
             # set model to evaluation mode
             model.eval()
-
             # initialize loss and R2 for validation set
             valid_loss_averager = make_averager()
             valid_r2.reset()
-
             with torch.no_grad():
                 for data, target in valid_loader:
                     data, target = data.to(device), target.to(device)
