@@ -7,10 +7,10 @@ import torch.nn as nn
 class MultiLayerPerceptron(nn.Module):
     """Multi Layer Perceptron"""
 
-    def __init__(self, layers, input_size):
+    def __init__(self, layers, hidden_dim, input_size):
         super(MultiLayerPerceptron, self).__init__()
 
-        sizes = [input_size] + [128] * layers + [1]
+        sizes = [input_size] + [hidden_dim] * layers + [1]
 
         fc_layers = OrderedDict()
         for i in range(len(sizes) - 1):

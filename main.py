@@ -22,8 +22,9 @@ def main():
 
     # Fixed parameters
     OUTPUT_NAME = "evalues"
-    LAYERS = 5
-    WEIGHT_DECAY = 0.0
+    LAYERS = 3
+    HIDDEN_DIM = 128
+    print("\nNon-parametric args:", LAYERS, HIDDEN_DIM)
 
     # magic values from mean and std of the whole dataset
     mean, std = get_mean_std(args.input_size)
@@ -43,7 +44,7 @@ def main():
 
     # import model, set its parameter as double and move it to GPU (if available)
     if args.model_type == "MLP":
-        model = MultiLayerPerceptron(LAYERS, 2 * args.input_size).to(device)
+        model = MultiLayerPerceptron(LAYERS, HIDDEN_DIM, 2 * args.input_size).to(device)
     elif args.model_type == "CNN":
         model = CNN().to(device)
     else:
@@ -62,7 +63,7 @@ def main():
         config.test_batch_size = args.test_batch_size
         config.epochs = args.epochs
         config.lr = args.learning_rate
-        config.weight_decay = WEIGHT_DECAY
+        config.weight_decay = args.weight_decay
         config.num_workers = args.num_workers
         config.model_type = args.model_type
         # parameter for wandb update
@@ -74,7 +75,7 @@ def main():
     # import loss and optimizer
     criterion = torch.nn.MSELoss()
     opt = torch.optim.Adam(
-        model.parameters(), lr=args.learning_rate, weight_decay=WEIGHT_DECAY
+        model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay
     )
 
     # define transform to apply
