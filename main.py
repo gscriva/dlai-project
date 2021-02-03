@@ -22,16 +22,20 @@ def main():
 
     # Fixed parameters
     OUTPUT_NAME = "evalues"
-    LAYERS = 3
+    LAYERS = 5
     HIDDEN_DIM = 128
-    print("\nNon-parametric args:", LAYERS, HIDDEN_DIM)
+    print(
+        "\nNon-parametric args: hidden_layers: {0}    hidden_dim: {1}".format(
+            LAYERS, HIDDEN_DIM
+        )
+    )
 
     # magic values from mean and std of the whole dataset
     mean, std = get_mean_std(args.input_size)
 
     # Initialize directories
     os.makedirs(
-        "checkpoints/{0}/L_{1}".format(args.model_type, args.input_size - 1),
+        "checkpoints/{0}/L_{1}_3".format(args.model_type, args.input_size - 1),
         exist_ok=True,
     )
 
@@ -235,7 +239,7 @@ def main():
                 best_losses = valid_loss
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}/best-model.pth".format(
+                    "checkpoints/{0}/L_{1}_3/best-model.pth".format(
                         args.model_type, args.input_size - 1
                     ),
                 )
@@ -244,7 +248,7 @@ def main():
             if epoch % 5 == 0:
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}/model-epoch-{2}.pth".format(
+                    "checkpoints/{0}/L_{1}_3/model-epoch-{2}.pth".format(
                         args.model_type, args.input_size - 1, epoch
                     ),
                 )
