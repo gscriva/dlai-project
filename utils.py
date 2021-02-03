@@ -25,6 +25,22 @@ def load_data(
     num_workers: int = 8,
     model: str = "MLP",
 ) -> tuple:
+    """Defines dataset as a class and return two loader, for training and validation set
+
+    Args:
+        dataset_path (str): Path to the files.
+        input_name (str): Name of the file in the archive to be used as input.
+        output_name (str): Name of the output values in the archive.
+        input_size (int): Size of the non-zero data to load.
+        batch_size (int): Size of the batch during the training.
+        test_batch_size (int): Size of the batch during the validation.
+        transform (transforms.transforms.Compose, optional): Transforms to apply to the incoming dataset. Defaults to None.
+        num_workers (int, optional): Maximum number of CPU to use during parallel data reading . Defaults to 8.
+        model (str, optional): Model to train, could be "MLP" or "CNN". Defaults to "MLP".
+
+    Returns:
+        tuple: Train and validation data loader.
+    """
 
     train_set = Speckle(
         dataset_path,
@@ -59,7 +75,7 @@ def load_data(
 
 
 def save_as_npz(
-    data_path: str, data_size: int, seed: int = 0, test_size: float = 0.2
+    data_path: str, data_size: int, seed: int = 42, test_size: float = 0.2
 ) -> None:
     """Read and save .dat data in a .npz file. The data retrieved are 
     the array of speckle (both real and fourier), the x axis and the output values.
@@ -69,6 +85,8 @@ def save_as_npz(
     Args:
         data_path (str): Path to the files.
         data_size (int): Size of a single array in the data.
+        seed (int, optional): Seed to retrieve pseudo-randomly training and test datasets. Defaults to 42.
+        test_size (float, optional): Size (in %) of the test set. Defaults to 0.2.
     """
     paths = []
     for file in os.listdir(data_path):
@@ -146,7 +164,7 @@ def read_arr(
         print("No such file in {0}".format(filepath))
 
     if outname:
-        name = outname
+        name = outname0
     else:
         # remove extension from filename
         name = os.path.basename(filepath)[:-4]
@@ -164,19 +182,19 @@ def read_arr(
     return (out, name)
 
 
-def split_ds(datas: list, seed: int = 0, test_size: float = 0.2) -> dict:
+def split_ds(datas: list, seed: int = 42, test_size: float = 0.2) -> dict:
     """Split the dataset between training and test set.
 
     Args:
         datas (list): List of data.
-        seed (int, optional): Seed to generate pseudo-random split for test set. Defaults to 0.
+        seed (int, optional): Seed to generate pseudo-random split for test set. Defaults to 42.
         test_size (float, optional): Percent of the size the test set. Defaults to 0.2.
 
     Returns:
         dict: Dictionary with two list, train and test. 
     """
     size_ds = datas[0][0].shape[0]
-    np.random.seed(0)
+    np.random.seed(seed)
     idx = np.full(size_ds, False, dtype=bool)
     idx[np.random.choice(size_ds, floor(size_ds * test_size), replace=False)] = True
 
@@ -187,7 +205,18 @@ def split_ds(datas: list, seed: int = 0, test_size: float = 0.2) -> dict:
     return data_dict
 
 
-def get_mean_std(input_size):
+def get_mean_std(input_size: int) -> tuple:
+    """Got the mean and the std of the selected dataset to normalize it.
+
+    Args:
+        input_size (int): Size of the non-zero data in the input.
+
+    Raises:
+        NotImplementedError: Raises and error if mean and std for the selected dataset are not stored.
+
+    Returns:
+        tuple: Mean and std.
+    """
     if input_size == 15:
         mean = 0.13343159690024803
         std = 0.6857376310390265
@@ -199,7 +228,7 @@ def get_mean_std(input_size):
         std = 0.3289505151231929
     else:
         raise NotImplementedError("No mean/std for this dataset")
-    return mean, std
+    return (mean, std)
 
 
 class Normalize(nn.Module):
