@@ -218,14 +218,14 @@ def get_mean_std(input_size: int) -> tuple:
         tuple: Mean and std.
     """
     if input_size == 15:
-        mean = 0.13343159690024803
-        std = 0.6857376310390265
+        mean = 0.09077719946317794
+        std = 0.6775751045223918
     elif input_size == 29:
-        mean = 0.06862209217371833
-        std = 0.47665849255227033
+        mean = 0.06862209217371831
+        std = 0.6323525970469002
     elif input_size == 57:
-        mean = 0.03522628768881963
-        std = 0.3289505151231929
+        mean = 0.046685331525855335
+        std = 0.5122093599303248
     else:
         raise NotImplementedError("No mean/std for this dataset")
     return (mean, std)
