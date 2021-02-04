@@ -140,3 +140,6 @@ wandb/*
 
 # model checkpoints
 checkpoints/*
+
+# print log
+*.txt
