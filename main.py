@@ -35,7 +35,9 @@ def main():
 
     # Initialize directories
     os.makedirs(
-        "checkpoints/{0}/L_{1}_7".format(args.model_type, args.input_size - 1),
+        "checkpoints/{0}/L_{1}_newmodel_256".format(
+            args.model_type, args.input_size - 1
+        ),
         exist_ok=True,
     )
 
@@ -90,7 +92,7 @@ def main():
     normalize = Normalize(mean, std)
     transform_list = [
         torch.tensor,
-        # normalize,
+        normalize,
     ]
     transform = transforms.Compose(transform_list)
 
@@ -147,17 +149,17 @@ def main():
             # mantain a running average of the loss
             train_loss_averager = make_averager()
 
-            tqdm_iterator = tqdm(
-                train_loader,
-                total=len(train_loader),
-                desc=f"batch [loss: None]",
-                leave=False,
-            )
+            # tqdm_iterator = tqdm(
+            #     train_loader,
+            #     total=len(train_loader),
+            #     desc=f"batch [loss: None]",
+            #     leave=False,
+            # )
 
             train_r2.reset()
             model.train()
-            for data, target in tqdm_iterator:
-                # for data, target in train_loader:
+            # for data, target in tqdm_iterator:
+            for data, target in train_loader:
                 data, target = data.to(device), target.to(device)
 
                 pred = model(data)
@@ -178,10 +180,10 @@ def main():
                 train_loss_averager(loss.item())
                 train_r2.update((pred, target))
 
-                tqdm_iterator.set_description(
-                    f"train batch [avg loss: {train_loss_averager(None):.3f}]"
-                )
-                tqdm_iterator.refresh()
+                # tqdm_iterator.set_description(
+                #     f"train batch [avg loss: {train_loss_averager(None):.3f}]"
+                # )
+                # tqdm_iterator.refresh()
 
             # set model to evaluation mode
             model.eval()
@@ -243,7 +245,7 @@ def main():
                 best_losses = valid_loss
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}_7/best-model.pth".format(
+                    "checkpoints/{0}/L_{1}_newmodel_256/best-model.pth".format(
                         args.model_type, args.input_size - 1
                     ),
                 )
@@ -252,7 +254,7 @@ def main():
             if epoch % 5 == 0:
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}_7/model-epoch-{2}.pth".format(
+                    "checkpoints/{0}/L_{1}_newmodel_256/model-epoch-{2}.pth".format(
                         args.model_type, args.input_size - 1, epoch
                     ),
                 )
@@ -271,7 +273,7 @@ def main():
 
         # define test dataloader
         test_loader, _ = load_data(
-            args.test_set_path,
+            args.test_data_dir,
             args.input_name,
             OUTPUT_NAME,
             args.input_size,
@@ -284,8 +286,10 @@ def main():
 
         # define r2 metrics
         test_r2 = R2Score()
+        test_r2.reset()
 
         model.eval()
+
         with torch.no_grad():
             for data, target in test_loader:
 
@@ -295,7 +299,7 @@ def main():
                 pred = pred.squeeze()
 
                 # update R2 values iteratively
-                valid_r2.update((pred, target))
+                test_r2.update((pred, target))
 
             print(f"Test set: R2 score: {test_r2.compute():.4f}\n")
 
