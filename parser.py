@@ -31,14 +31,14 @@ def parser():
         default=100,
         type=int,
         metavar="N",
-        help="batch size (default: 100)",
+        help="training batch size (default: 100)",
     )
     parser.add_argument(
-        "--test_batch_size",
+        "--val_batch_size",
         default=200,
         type=int,
         metavar="N",
-        help="batch size (default: 200)",
+        help="validation batch size [Set 0 for testing] (default: 200)",
     )
     parser.add_argument(
         "--epochs",
@@ -69,6 +69,13 @@ def parser():
         help="dataset directory (used for both train and validation)",
     )
     parser.add_argument(
+        "--test_data_dir",
+        default="dataset/test_data_L14.npz",
+        type=str,
+        metavar="string",
+        help="dataset directory used for testing",
+    )
+    parser.add_argument(
         "--input_name",
         default="speckleF",
         type=str,
@@ -90,17 +97,24 @@ def parser():
         help="size of input (if smaller than its natural size)",
     )
     parser.add_argument(
+        "--hidden_dim",
+        default=128,
+        type=int,
+        metavar="N",
+        help="channels in the hidden layers (default 128)",
+    )
+    parser.add_argument(
         "--num_workers",
         default=8,
         type=int,
         metavar="N",
-        help="number of CPU to use in training",
+        help="number of CPU to use in training (default 8)",
     )
     parser.add_argument(
         "--model_type",
         default="MLP",
         type=str,
         metavar="string",
-        help="type of the model to train/eval",
+        help="type of the model to train/eval (default MLP)",
     )
     return parser

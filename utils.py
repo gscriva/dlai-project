@@ -20,7 +20,7 @@ def load_data(
     output_name: str,
     input_size: int,
     batch_size: int,
-    test_batch_size: int,
+    val_batch_size: int,
     transform: transforms.transforms.Compose = None,
     num_workers: int = 8,
     model: str = "MLP",
@@ -33,7 +33,7 @@ def load_data(
         output_name (str): Name of the output values in the archive.
         input_size (int): Size of the non-zero data to load.
         batch_size (int): Size of the batch during the training.
-        test_batch_size (int): Size of the batch during the validation.
+        val_batch_size (int): Size of the batch during the validation.
         transform (transforms.transforms.Compose, optional): Transforms to apply to the incoming dataset. Defaults to None.
         num_workers (int, optional): Maximum number of CPU to use during parallel data reading . Defaults to 8.
         model (str, optional): Model to train, could be "MLP" or "CNN". Defaults to "MLP".
@@ -42,6 +42,11 @@ def load_data(
         tuple: Train and validation data loader.
     """
 
+    if val_batch_size == 0:
+        train_size = 1.0
+    else:
+        train_size = 0.9
+
     train_set = Speckle(
         dataset_path,
         input_name,
@@ -49,7 +54,7 @@ def load_data(
         transform=transform,
         output_name=output_name,
         train=True,
-        train_size=0.9,
+        train_size=train_size,
         seed=0,
         model=model,
     )
@@ -60,7 +65,7 @@ def load_data(
         transform=transform,
         output_name=output_name,
         train=False,
-        train_size=0.9,
+        train_size=train_size,
         seed=0,
         model=model,
     )
@@ -69,7 +74,7 @@ def load_data(
         train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers
     )
     val_loader = torch.utils.data.DataLoader(
-        val_set, batch_size=test_batch_size, shuffle=False, num_workers=num_workers
+        val_set, batch_size=val_batch_size, shuffle=False, num_workers=num_workers
     )
     return train_loader, val_loader
 

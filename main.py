@@ -18,15 +18,15 @@ def main():
     # Load parser
     pars = parser()
     args = pars.parse_args()
-    print("Arguments:\n{}".format(args))
+    print("Arguments:\n{}\n\n".format(args))
 
     # Fixed parameters
     OUTPUT_NAME = "evalues"
     LAYERS = 5
-    HIDDEN_DIM = 128
+    TEST_BATCH_SIZE = 500
     print(
-        "\nNon-parametric args: hidden_layers: {0}    hidden_dim: {1}".format(
-            LAYERS, HIDDEN_DIM
+        "\nNon-parametric args: hidden_layers: {0}  test_batch_size: {1}".format(
+            LAYERS, TEST_BATCH_SIZE
         )
     )
 
@@ -35,7 +35,7 @@ def main():
 
     # Initialize directories
     os.makedirs(
-        "checkpoints/{0}/L_{1}_3".format(args.model_type, args.input_size - 1),
+        "checkpoints/{0}/L_{1}_7".format(args.model_type, args.input_size - 1),
         exist_ok=True,
     )
 
@@ -48,7 +48,9 @@ def main():
 
     # import model, set its parameter as double and move it to GPU (if available)
     if args.model_type == "MLP":
-        model = MultiLayerPerceptron(LAYERS, HIDDEN_DIM, 2 * args.input_size).to(device)
+        model = MultiLayerPerceptron(LAYERS, args.hidden_dim, 2 * args.input_size).to(
+            device
+        )
     elif args.model_type == "CNN":
         model = CNN().to(device)
     else:
@@ -64,12 +66,14 @@ def main():
         # wandb config hyperparameters
         config = wandb.config
         config.batch_size = args.batch_size
-        config.test_batch_size = args.test_batch_size
+        config.val_batch_size = args.val_batch_size
         config.epochs = args.epochs
         config.lr = args.learning_rate
         config.weight_decay = args.weight_decay
         config.num_workers = args.num_workers
         config.model_type = args.model_type
+        config.hidden_dim = args.hidden_dim
+        config.layers = LAYERS
         # parameter for wandb update
         config.log_interval = 5
 
@@ -86,7 +90,7 @@ def main():
     normalize = Normalize(mean, std)
     transform_list = [
         torch.tensor,
-        normalize,
+        # normalize,
     ]
     transform = transforms.Compose(transform_list)
 
@@ -97,7 +101,7 @@ def main():
         OUTPUT_NAME,
         args.input_size,
         args.batch_size,
-        args.test_batch_size,
+        args.val_batch_size,
         transform=transform,
         num_workers=args.num_workers,
         model=args.model_type,
@@ -143,17 +147,17 @@ def main():
             # mantain a running average of the loss
             train_loss_averager = make_averager()
 
-            # tqdm_iterator = tqdm(
-            #     train_loader,
-            #     total=len(train_loader),
-            #     desc=f"batch [loss: None]",
-            #     leave=False,
-            # )
+            tqdm_iterator = tqdm(
+                train_loader,
+                total=len(train_loader),
+                desc=f"batch [loss: None]",
+                leave=False,
+            )
 
             train_r2.reset()
             model.train()
-            # for data, target in tqdm_iterator:
-            for data, target in train_loader:
+            for data, target in tqdm_iterator:
+                # for data, target in train_loader:
                 data, target = data.to(device), target.to(device)
 
                 pred = model(data)
@@ -174,10 +178,10 @@ def main():
                 train_loss_averager(loss.item())
                 train_r2.update((pred, target))
 
-                # tqdm_iterator.set_description(
-                #     f"train batch [avg loss: {train_loss_averager(None):.3f}]"
-                # )
-                # tqdm_iterator.refresh()
+                tqdm_iterator.set_description(
+                    f"train batch [avg loss: {train_loss_averager(None):.3f}]"
+                )
+                tqdm_iterator.refresh()
 
             # set model to evaluation mode
             model.eval()
@@ -239,7 +243,7 @@ def main():
                 best_losses = valid_loss
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}_3/best-model.pth".format(
+                    "checkpoints/{0}/L_{1}_7/best-model.pth".format(
                         args.model_type, args.input_size - 1
                     ),
                 )
@@ -248,7 +252,7 @@ def main():
             if epoch % 5 == 0:
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}_3/model-epoch-{2}.pth".format(
+                    "checkpoints/{0}/L_{1}_7/model-epoch-{2}.pth".format(
                         args.model_type, args.input_size - 1, epoch
                     ),
                 )
@@ -258,6 +262,42 @@ def main():
             torch.save(
                 model.state_dict(), os.path.join(wandb.run.dir, "model_final.pt")
             )
+    else:
+        print("Loading model {}...".format(args.resume))
+        checkpoint = torch.load(args.resume, map_location=lambda storage, loc: storage)
+
+        # load weights
+        model.load_state_dict(checkpoint["model_state_dict"])
+
+        # define test dataloader
+        test_loader, _ = load_data(
+            args.test_set_path,
+            args.input_name,
+            OUTPUT_NAME,
+            args.input_size,
+            TEST_BATCH_SIZE,
+            0,
+            transform=transform,
+            num_workers=args.num_workers,
+            model=args.model_type,
+        )
+
+        # define r2 metrics
+        test_r2 = R2Score()
+
+        model.eval()
+        with torch.no_grad():
+            for data, target in test_loader:
+
+                pred = model(data)
+
+                # pred has dim (batch_size, 1)
+                pred = pred.squeeze()
+
+                # update R2 values iteratively
+                valid_r2.update((pred, target))
+
+            print(f"Test set: R2 score: {test_r2.compute():.4f}\n")
 
 
 if __name__ == "__main__":
