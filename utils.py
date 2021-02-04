@@ -44,6 +44,9 @@ def load_data(
 
     if val_batch_size == 0:
         train_size = 1.0
+        # set a non zero value for batch_size, even if
+        # valid_loader is empty (train_size)
+        val_batch_size = 1
     else:
         train_size = 0.9
 
@@ -71,7 +74,7 @@ def load_data(
     )
 
     train_loader = torch.utils.data.DataLoader(
-        train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers
+        train_set, batch_size=batch_size, shuffle=False, num_workers=num_workers
     )
     val_loader = torch.utils.data.DataLoader(
         val_set, batch_size=val_batch_size, shuffle=False, num_workers=num_workers
