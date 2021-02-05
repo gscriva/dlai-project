@@ -74,7 +74,7 @@ def load_data(
     )
 
     train_loader = torch.utils.data.DataLoader(
-        train_set, batch_size=batch_size, shuffle=False, num_workers=num_workers
+        train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers
     )
     val_loader = torch.utils.data.DataLoader(
         val_set, batch_size=val_batch_size, shuffle=False, num_workers=num_workers
