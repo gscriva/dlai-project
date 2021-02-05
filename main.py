@@ -22,13 +22,8 @@ def main():
 
     # Fixed parameters
     OUTPUT_NAME = "evalues"
-    LAYERS = 3
     TEST_BATCH_SIZE = 500
-    print(
-        "\nNon-parametric args: hidden_layers: {0}  test_batch_size: {1}".format(
-            LAYERS, TEST_BATCH_SIZE
-        )
-    )
+    print("\nNon-parametric args:\ntest_batch_size: {0}".format(TEST_BATCH_SIZE))
 
     # magic values from mean and std of the whole dataset
     mean, std = get_mean_std(args.input_size)
@@ -51,9 +46,9 @@ def main():
 
     # import model, set its parameter as double and move it to GPU (if available)
     if args.model_type == "MLP":
-        model = MultiLayerPerceptron(LAYERS, args.hidden_dim, 2 * args.input_size).to(
-            device
-        )
+        model = MultiLayerPerceptron(
+            args.layers, args.hidden_dim, 2 * args.input_size
+        ).to(device)
     elif args.model_type == "CNN":
         model = CNN().to(device)
     else:
@@ -76,7 +71,7 @@ def main():
         config.num_workers = args.num_workers
         config.model_type = args.model_type
         config.hidden_dim = args.hidden_dim
-        config.layers = LAYERS
+        config.layers = args.layers
         # parameter for wandb update
         config.log_interval = 5
 

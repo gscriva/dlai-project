@@ -65,14 +65,14 @@ def parser():
         "--data_dir",
         default="dataset/train_data_L14.npz",
         type=str,
-        metavar="string",
+        metavar="PATH",
         help="dataset directory (used for both train and validation)",
     )
     parser.add_argument(
         "--test_data_dir",
         default="dataset/test_data_L14.npz",
         type=str,
-        metavar="string",
+        metavar="PATH",
         help="dataset directory used for testing",
     )
     parser.add_argument(
@@ -102,6 +102,13 @@ def parser():
         type=int,
         metavar="N",
         help="channels in the hidden layers (default 128)",
+    )
+    parser.add_argument(
+        "--layers",
+        default=5,
+        type=int,
+        metavar="N",
+        help="number of the hidden layers (default 5)",
     )
     parser.add_argument(
         "--num_workers",
