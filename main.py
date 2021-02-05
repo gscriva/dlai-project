@@ -44,7 +44,7 @@ def main():
     # limit number of CPUs
     torch.set_num_threads(args.num_workers)
     # And set inter-parallel processes
-    torch.set_num_interop_threads(2)
+    torch.set_num_interop_threads(1)
 
     # check if GPU is available
     device = "cuda" if torch.cuda.is_available() else "cpu"
