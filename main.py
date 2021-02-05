@@ -22,7 +22,7 @@ def main():
 
     # Fixed parameters
     OUTPUT_NAME = "evalues"
-    LAYERS = 5
+    LAYERS = 3
     TEST_BATCH_SIZE = 500
     print(
         "\nNon-parametric args: hidden_layers: {0}  test_batch_size: {1}".format(
@@ -35,15 +35,16 @@ def main():
 
     # Initialize directories
     os.makedirs(
-        "checkpoints/{0}/L_{1}_newmodel_256".format(
+        "checkpoints/{0}/L_{1}_newmodel256".format(
             args.model_type, args.input_size - 1
         ),
         exist_ok=True,
     )
 
     # limit number of CPUs
-    torch.set_num_interop_threads(args.num_workers)
     torch.set_num_threads(args.num_workers)
+    # And set inter-parallel processes
+    torch.set_num_interop_threads(2)
 
     # check if GPU is available
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -159,7 +160,7 @@ def main():
             train_r2.reset()
             model.train()
             # for data, target in tqdm_iterator:
-            for data, target in train_loader:
+            for i, (data, target) in enumerate(train_loader):
                 data, target = data.to(device), target.to(device)
 
                 pred = model(data)
@@ -245,7 +246,7 @@ def main():
                 best_losses = valid_loss
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}_newmodel_256/best-model.pth".format(
+                    "checkpoints/{0}/L_{1}_newmodel256/best-model.pth".format(
                         args.model_type, args.input_size - 1
                     ),
                 )
@@ -254,7 +255,7 @@ def main():
             if epoch % 5 == 0:
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}_newmodel_256/model-epoch-{2}.pth".format(
+                    "checkpoints/{0}/L_{1}_newmodel256/model-epoch-{2}.pth".format(
                         args.model_type, args.input_size - 1, epoch
                     ),
                 )
