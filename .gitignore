@@ -143,3 +143,4 @@ checkpoints/*
 
 # print log
 *.txt
+computeEnergy.ipynb
