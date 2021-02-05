@@ -172,7 +172,7 @@ def read_arr(
         print("No such file in {0}".format(filepath))
 
     if outname:
-        name = outname0
+        name = outname
     else:
         # remove extension from filename
         name = os.path.basename(filepath)[:-4]
