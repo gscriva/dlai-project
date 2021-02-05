@@ -11,14 +11,21 @@ class MultiLayerPerceptron(nn.Module):
     def __init__(self, layers, hidden_dim, input_size):
         super(MultiLayerPerceptron, self).__init__()
 
-        hidden_dims = list(range(2, layers + 1, 2))
-        hidden_dims = [1] + hidden_dims
-        hidden_dims = hidden_dims[::-1] + hidden_dims[1:]
-        print(hidden_dims)
-        hidden_dims = (hidden_dim / np.asarray(hidden_dims)).astype(int).tolist()
+        hidden_dims = np.arange((layers + 1) // 2)
+        if layers % 2 == 0:
+            hidden_dims = 2 ** np.concatenate(
+                (hidden_dims[::-1], np.array([0]), hidden_dims), axis=None
+            )
+        else:
+            hidden_dims = 2 ** np.append(hidden_dims[::-1], hidden_dims)
+        hidden_dims = (hidden_dim / hidden_dims).astype(int).tolist()
 
         # add input and output dimension
         sizes = [input_size] + hidden_dims + [1]
+
+        # old model
+        # sizes = [input_size] + [hidden_dim] * layers + [1]
+        print("structure {0}".format(sizes))
 
         fc_layers = OrderedDict()
         for i in range(len(sizes) - 1):
