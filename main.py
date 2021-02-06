@@ -159,7 +159,7 @@ def main():
             train_r2.reset()
             model.train()
             # for data, target in tqdm_iterator:
-            for i, (data, target) in enumerate(train_loader):
+            for data, target in train_loader:
                 data, target = data.to(device), target.to(device)
 
                 pred = model(data)
