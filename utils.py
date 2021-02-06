@@ -172,7 +172,7 @@ def read_arr(
         print("No such file in {0}".format(filepath))
 
     if outname:
-        name = outname0
+        name = outname
     else:
         # remove extension from filename
         name = os.path.basename(filepath)[:-4]
@@ -226,14 +226,14 @@ def get_mean_std(input_size: int) -> tuple:
         tuple: Mean and std.
     """
     if input_size == 15:
-        mean = 0.09077719946317794
-        std = 0.6775751045223918
+        mean = 0.1335559866334984
+        std = 0.8652517549534604
     elif input_size == 29:
-        mean = 0.06862209217371831
-        std = 0.6323525970469002
+        mean = 0.06869976560684468
+        std = 0.632349175123915
     elif input_size == 57:
-        mean = 0.046685331525855335
-        std = 0.5122093599303248
+        mean = 0.03523686758637773
+        std = 0.45485358612590787
     else:
         raise NotImplementedError("No mean/std for this dataset")
     return (mean, std)

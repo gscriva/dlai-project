@@ -30,8 +30,12 @@ def main():
 
     # Initialize directories
     os.makedirs(
-        "checkpoints/{0}/L_{1}_newmodel256".format(
-            args.model_type, args.input_size - 1
+        "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}".format(
+            args.model_type,
+            args.input_size - 1,
+            args.batch_size,
+            args.layers,
+            args.hidden_dim,
         ),
         exist_ok=True,
     )
@@ -155,7 +159,7 @@ def main():
             train_r2.reset()
             model.train()
             # for data, target in tqdm_iterator:
-            for i, (data, target) in enumerate(train_loader):
+            for data, target in train_loader:
                 data, target = data.to(device), target.to(device)
 
                 pred = model(data)
@@ -241,17 +245,26 @@ def main():
                 best_losses = valid_loss
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}_newmodel256/best-model.pth".format(
-                        args.model_type, args.input_size - 1
+                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}/best-model.pth".format(
+                        args.model_type,
+                        args.input_size - 1,
+                        args.batch_size,
+                        args.layers,
+                        args.hidden_dim,
                     ),
                 )
 
-            # save model every five epochs
-            if epoch % 5 == 0:
+            # save model every epoch
+            if epoch % 1 == 0:
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}_newmodel256/model-epoch-{2}.pth".format(
-                        args.model_type, args.input_size - 1, epoch
+                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}/model-epoch-{5}.pth".format(
+                        args.model_type,
+                        args.input_size - 1,
+                        args.batch_size,
+                        args.layers,
+                        args.hidden_dim,
+                        epoch,
                     ),
                 )
 
