@@ -134,6 +134,7 @@ dmypy.json
 # Data
 *.npz
 dataset/*
+notebooks/*
 
 # wandb folder
 wandb/*
