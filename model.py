@@ -8,10 +8,27 @@ import torch.nn as nn
 class MultiLayerPerceptron(nn.Module):
     """Multi Layer Perceptron"""
 
-    def __init__(self, layers, hidden_dim, input_size, dropout):
+    def __init__(
+        self,
+        layers,
+        hidden_dim,
+        input_size,
+        dropout=False,
+        batchnorm=False,
+        activation="relu",
+    ):
         super(MultiLayerPerceptron, self).__init__()
 
-        hidden_dims = self._get_hidden_dims(hidden_dim, layers)
+        # init attributes
+        self.layers = layers
+        self.hidden_dim = hidden_dim
+        self.input_size = input_size
+        self.dropout = dropout
+        self.batchnorm = batchnorm
+        self.activation = self._get_activation_func(activation)
+
+        # get proper architecture for hidden layers
+        hidden_dims = self._get_hidden_dims()
 
         # add input and output dimension
         sizes = [input_size] + hidden_dims + [1]
@@ -25,27 +42,39 @@ class MultiLayerPerceptron(nn.Module):
             fc_layers["linear{0}".format(i)] = nn.Linear(sizes[i], sizes[i + 1])
             if i == len(sizes) - 2:
                 continue
-            fc_layers["batch{0}".format(i)] = nn.BatchNorm1d(sizes[i + 1])
-            # fc_layers["relu{0}".format(i)] = nn.ReLU()
-            # fc_layers["prelu{0}".format(i)] = nn.PReLU()
-            fc_layers["rrelu{0}".format(i)] = nn.RReLU()
-            # fc_layers["leaky{0}".format(i)] = nn.LeakyReLU()
-            # fc_layers["gelu{0}".format(i)] = nn.GELU()
-            if dropout:
+            fc_layers["{0}{1}".format(activation, i)] = self.activation
+            if self.batchnorm:
+                fc_layers["batch{0}".format(i)] = nn.BatchNorm1d(sizes[i + 1])
+            if self.dropout:
                 fc_layers["dropout{0}".format(i)] = nn.Dropout(p=0.2)
 
         self.layers = nn.Sequential(fc_layers)
 
-    def _get_hidden_dims(self, hidden_dim: int, layers: int) -> list:
-        hidden_dims = np.arange((layers + 1) // 2)
-        if layers % 2 == 0:
+    def _get_hidden_dims(self) -> list:
+        hidden_dims = np.arange((self.layers + 1) // 2)
+        if self.layers % 2 == 0:
             hidden_dims = 2 ** np.concatenate(
                 (hidden_dims[::-1], np.array([0]), hidden_dims), axis=None
             )
         else:
             hidden_dims = 2 ** np.append(hidden_dims[::-1], hidden_dims)
-        hidden_dims = (hidden_dim / hidden_dims).astype(int).tolist()
+        hidden_dims = (self.hidden_dim / hidden_dims).astype(int).tolist()
         return hidden_dims
+
+    def _get_activation_func(self, activation) -> nn.modules.activation.ReLU:
+        if activation == "relu":
+            function = nn.ReLU()
+        elif activation == "prelu":
+            function = nn.PReLU()
+        elif activation == "rrelu":
+            function = nn.RReLU()
+        elif activation == "leakyrelu":
+            function = nn.LeakyReLU()
+        elif activation == "gelu":
+            function = nn.GELU()
+        else:
+            raise NotImplementedError("Activation function not implemented")
+        return function
 
     def forward(self, x):
         return self.layers(x)
