@@ -30,7 +30,7 @@ def main():
 
     # Initialize directories
     os.makedirs(
-        "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}".format(
+        "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-lr1e2".format(
             args.model_type,
             args.input_size - 1,
             args.batch_size,
@@ -51,7 +51,7 @@ def main():
     # import model, set its parameter as double and move it to GPU (if available)
     if args.model_type == "MLP":
         model = MultiLayerPerceptron(
-            args.layers, args.hidden_dim, 2 * args.input_size
+            args.layers, args.hidden_dim, 2 * (args.input_size - 1), args.dropout
         ).to(device)
     elif args.model_type == "CNN":
         model = CNN().to(device)
@@ -245,7 +245,7 @@ def main():
                 best_losses = valid_loss
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}/best-model.pth".format(
+                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-lr1e2/best-model.pth".format(
                         args.model_type,
                         args.input_size - 1,
                         args.batch_size,
@@ -258,7 +258,7 @@ def main():
             if epoch % 1 == 0:
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}/model-epoch-{5}.pth".format(
+                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-lr1e2/model-epoch-{5}.pth".format(
                         args.model_type,
                         args.input_size - 1,
                         args.batch_size,
