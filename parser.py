@@ -20,6 +20,13 @@ def parser():
         help="use this flag to train the model",
     )
     parser.add_argument(
+        "-D",
+        "--dropout",
+        dest="dropout",
+        action="store_true",
+        help="use this flag to use dropout in the model",
+    )
+    parser.add_argument(
         "-w",
         "--wandb",
         dest="save_wandb",
