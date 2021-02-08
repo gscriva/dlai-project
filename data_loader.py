@@ -78,7 +78,7 @@ class Speckle(Dataset):
     def _get_correct_ds(self, data, data_name, idx, input_size, model):
         if model == "MLP":
             # only input_size coef are non zeros
-            self.dataset = data[data_name][idx, :input_size]
+            self.dataset = data[data_name][idx, 1:input_size]
             # Fourier data are complex, so we take real and imag part
             # as feature vector
             self._get_real_ds()
