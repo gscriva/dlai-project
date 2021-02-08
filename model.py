@@ -8,17 +8,10 @@ import torch.nn as nn
 class MultiLayerPerceptron(nn.Module):
     """Multi Layer Perceptron"""
 
-    def __init__(self, layers, hidden_dim, input_size):
+    def __init__(self, layers, hidden_dim, input_size, dropout):
         super(MultiLayerPerceptron, self).__init__()
 
-        hidden_dims = np.arange((layers + 1) // 2)
-        if layers % 2 == 0:
-            hidden_dims = 2 ** np.concatenate(
-                (hidden_dims[::-1], np.array([0]), hidden_dims), axis=None
-            )
-        else:
-            hidden_dims = 2 ** np.append(hidden_dims[::-1], hidden_dims)
-        hidden_dims = (hidden_dim / hidden_dims).astype(int).tolist()
+        hidden_dims = self._get_hidden_dims(hidden_dim, layers)
 
         # add input and output dimension
         sizes = [input_size] + hidden_dims + [1]
@@ -33,9 +26,26 @@ class MultiLayerPerceptron(nn.Module):
             if i == len(sizes) - 2:
                 continue
             fc_layers["batch{0}".format(i)] = nn.BatchNorm1d(sizes[i + 1])
-            fc_layers["relu{0}".format(i)] = nn.ReLU()
+            # fc_layers["relu{0}".format(i)] = nn.ReLU()
+            # fc_layers["prelu{0}".format(i)] = nn.PReLU()
+            fc_layers["rrelu{0}".format(i)] = nn.RReLU()
+            # fc_layers["leaky{0}".format(i)] = nn.LeakyReLU()
+            # fc_layers["gelu{0}".format(i)] = nn.GELU()
+            if dropout:
+                fc_layers["dropout{0}".format(i)] = nn.Dropout(p=0.2)
 
         self.layers = nn.Sequential(fc_layers)
+
+    def _get_hidden_dims(self, hidden_dim: int, layers: int) -> list:
+        hidden_dims = np.arange((layers + 1) // 2)
+        if layers % 2 == 0:
+            hidden_dims = 2 ** np.concatenate(
+                (hidden_dims[::-1], np.array([0]), hidden_dims), axis=None
+            )
+        else:
+            hidden_dims = 2 ** np.append(hidden_dims[::-1], hidden_dims)
+        hidden_dims = (hidden_dim / hidden_dims).astype(int).tolist()
+        return hidden_dims
 
     def forward(self, x):
         return self.layers(x)
