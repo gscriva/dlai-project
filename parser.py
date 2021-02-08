@@ -20,11 +20,18 @@ def parser():
         help="use this flag to train the model",
     )
     parser.add_argument(
-        "-D",
+        "-d",
         "--dropout",
         dest="dropout",
         action="store_true",
         help="use this flag to use dropout in the model",
+    )
+    parser.add_argument(
+        "-b",
+        "--batchnorm",
+        dest="batchnorm",
+        action="store_true",
+        help="use this flag to use batchnorm in the model",
     )
     parser.add_argument(
         "-w",
@@ -42,10 +49,10 @@ def parser():
     )
     parser.add_argument(
         "--val_batch_size",
-        default=200,
+        default=2000,
         type=int,
         metavar="N",
-        help="validation batch size [Set 0 for testing] (default: 200)",
+        help="validation batch size [Set 0 for testing] (default: 2000)",
     )
     parser.add_argument(
         "--epochs",
@@ -67,6 +74,13 @@ def parser():
         type=float,
         metavar="N",
         help="learning rate (default 0)",
+    )
+    parser.add_argument(
+        "--activation",
+        default="rrelu",
+        type=str,
+        metavar="PATH",
+        help="specify activation function (default rrelu)",
     )
     parser.add_argument(
         "--data_dir",
