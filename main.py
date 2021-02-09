@@ -1,5 +1,6 @@
 import os
 from collections import defaultdict
+from parser import parser
 
 import numpy as np
 import torch
@@ -11,7 +12,6 @@ import wandb
 from model import MultiLayerPerceptron, CNN
 from score import make_averager
 from utils import load_data, get_mean_std, Normalize
-from parser import parser
 
 
 def main():
@@ -30,12 +30,13 @@ def main():
 
     # Initialize directories
     os.makedirs(
-        "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-lr1e2".format(
+        "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}".format(
             args.model_type,
             args.input_size - 1,
             args.batch_size,
             args.layers,
             args.hidden_dim,
+            args.activation,
         ),
         exist_ok=True,
     )
@@ -51,7 +52,12 @@ def main():
     # import model, set its parameter as double and move it to GPU (if available)
     if args.model_type == "MLP":
         model = MultiLayerPerceptron(
-            args.layers, args.hidden_dim, 2 * (args.input_size - 1), args.dropout
+            args.layers,
+            args.hidden_dim,
+            2 * (args.input_size - 1),
+            args.dropout,
+            args.batchnorm,
+            args.activation,
         ).to(device)
     elif args.model_type == "CNN":
         model = CNN().to(device)
@@ -76,6 +82,9 @@ def main():
         config.model_type = args.model_type
         config.hidden_dim = args.hidden_dim
         config.layers = args.layers
+        config.dropout = args.dropout
+        config.batchnorm = args.batchnorm
+        config.activation = args.activation
         # parameter for wandb update
         config.log_interval = 5
 
@@ -92,7 +101,7 @@ def main():
     normalize = Normalize(mean, std)
     transform_list = [
         torch.tensor,
-        normalize,
+        # normalize,
     ]
     transform = transforms.Compose(transform_list)
 
@@ -245,12 +254,13 @@ def main():
                 best_losses = valid_loss
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-lr1e2/best-model.pth".format(
+                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}/best-model.pth".format(
                         args.model_type,
                         args.input_size - 1,
                         args.batch_size,
                         args.layers,
                         args.hidden_dim,
+                        args.activation,
                     ),
                 )
 
@@ -258,12 +268,13 @@ def main():
             if epoch % 1 == 0:
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-lr1e2/model-epoch-{5}.pth".format(
+                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}/model-epoch-{6}.pth".format(
                         args.model_type,
                         args.input_size - 1,
                         args.batch_size,
                         args.layers,
                         args.hidden_dim,
+                        args.activation,
                         epoch,
                     ),
                 )
