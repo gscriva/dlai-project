@@ -51,17 +51,34 @@ class MultiLayerPerceptron(nn.Module):
         self.layers = nn.Sequential(fc_layers)
 
     def _get_hidden_dims(self) -> list:
+        """The function returns a list of dimensions to be use
+        n building the neural network.
+
+        Returns:
+            list: dimension of layers.
+        """
+        # hidden dims is just a list of exponents
         hidden_dims = np.arange((self.layers + 1) // 2)
         if self.layers % 2 == 0:
+            # if layers is even an extra layer is added
             hidden_dims = 2 ** np.concatenate(
                 (hidden_dims[::-1], np.array([0]), hidden_dims), axis=None
             )
         else:
             hidden_dims = 2 ** np.append(hidden_dims[::-1], hidden_dims)
+        # hidden dims is just the maximum hidden dim over power-of-2-list
         hidden_dims = (self.hidden_dim / hidden_dims).astype(int).tolist()
         return hidden_dims
 
-    def _get_activation_func(self, activation) -> nn.modules.activation.ReLU:
+    def _get_activation_func(self, activation: str) -> nn.modules.activation.ReLU:
+        """Returns the requested activation function.
+
+        Args:
+            activation (str): Name of the activation function.
+
+        Returns:
+            nn.modules.activation.ReLU: The chosen activationfunction
+        """
         if activation == "relu":
             function = nn.ReLU()
         elif activation == "prelu":
