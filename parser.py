@@ -126,10 +126,10 @@ def parser():
     )
     parser.add_argument(
         "--layers",
-        default=5,
+        default=3,
         type=int,
         metavar="N",
-        help="number of the hidden layers (default 5)",
+        help="number of the hidden layers (default 3)",
     )
     parser.add_argument(
         "--num_workers",
