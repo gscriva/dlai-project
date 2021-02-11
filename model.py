@@ -4,6 +4,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from load_parameters import load_param
+
 
 class MultiLayerPerceptron(nn.Module):
     """Multi Layer Perceptron"""
@@ -15,7 +17,9 @@ class MultiLayerPerceptron(nn.Module):
         input_size,
         dropout=False,
         batchnorm=False,
-        activation="relu",
+        activation="rrelu",
+        init=False,
+        model_path=None,
     ):
         super(MultiLayerPerceptron, self).__init__()
 
@@ -36,15 +40,31 @@ class MultiLayerPerceptron(nn.Module):
         # old model
         # sizes = [input_size] + [hidden_dim] * layers + [1]
         print("structure {0}".format(sizes))
+        print(init)
+        if init:
+            parameter = load_param(model_path, input_size)
+            print("\nModel parameters initialized")
 
         fc_layers = OrderedDict()
         for i in range(len(sizes) - 1):
             fc_layers["linear{0}".format(i)] = nn.Linear(sizes[i], sizes[i + 1])
+
+            if init is not None:
+                fc_layers["linear{0}".format(i)].weight = nn.Parameter(
+                    parameter["layers.linear{0}.weight".format(i)]
+                )
+                fc_layers["linear{0}".format(i)].bias = nn.Parameter(
+                    parameter["layers.linear{0}.bias".format(i)]
+                )
+
             if i == len(sizes) - 2:
                 continue
+
             fc_layers["{0}{1}".format(activation, i)] = self.activation
+
             if self.batchnorm:
                 fc_layers["batch{0}".format(i)] = nn.BatchNorm1d(sizes[i + 1])
+
             if self.dropout:
                 fc_layers["dropout{0}".format(i)] = nn.Dropout(p=0.2)
 

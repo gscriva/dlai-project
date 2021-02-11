@@ -41,6 +41,13 @@ def parser():
         help="use this flag to save the model on wandb",
     )
     parser.add_argument(
+        "-i",
+        "--init_model",
+        dest="init",
+        action="store_true",
+        help="use this flag to load the model's parameters",
+    )
+    parser.add_argument(
         "--batch_size",
         default=100,
         type=int,
@@ -95,6 +102,13 @@ def parser():
         type=str,
         metavar="PATH",
         help="dataset directory used for testing",
+    )
+    parser.add_argument(
+        "--model_path",
+        default=None,
+        type=str,
+        metavar="PATH",
+        help="dataset directory used to load model's parameters",
     )
     parser.add_argument(
         "--input_name",
