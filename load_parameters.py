@@ -1,11 +1,12 @@
 from collections import OrderedDict
+from typing import Callable
 
 import torch
 import numpy as np
 from scipy import interpolate
 
 
-def load_param(path: str, x_newsize: int) -> OrderedDict:
+def load_param(path: str, x_newsize: int, method: str = "interp") -> OrderedDict:
     # load parameters from pretrained model
     try:
         checkpoint = torch.load(path)
@@ -16,9 +17,22 @@ def load_param(path: str, x_newsize: int) -> OrderedDict:
     weight0 = trained_param["layers.linear0.weight"]
 
     # layer 0 must be resized
-    trained_param["layers.linear0.weight"] = inter_param(weight0, x_newsize)
+    init_method = get_method(
+        method,
+    )
+    trained_param["layers.linear0.weight"] = init_method(weight0, x_newsize)
 
     return trained_param
+
+
+def get_method(method: str) -> Callable:
+    if method == "interp":
+        init_method = inter_param
+    else:
+        raise NotImplementedError(
+            "Requested method {0} is not implemeted".format(method)
+        )
+    return init_method
 
 
 def inter_param(weight0: torch.Tensor, x_newsize: int) -> torch.Tensor:
