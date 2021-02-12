@@ -56,7 +56,7 @@ def main(
         OUTPUT_NAME,
         input_size,
         50,
-        100,
+        1000,
         transform=transform,
         num_workers=num_workers,
         model="MLP",
@@ -132,19 +132,19 @@ def main(
             val_r2.append(valid_r2.compute())
 
     #    print(valid_r2.compute())
-    return (val_loss[0], val_r2[0])
+    return (val_loss, val_r2)
 
 
 val_scores = []
 
 # limit number of CPUs
-torch.set_num_threads(2)
+torch.set_num_threads(8)
 # And set inter-parallel processes
 torch.set_num_interop_threads(1)
 
 for i in range(201):
     # print(i)
-    path = "checkpoints/MLP/L_14/batch200-layer3-hidden_dim128-rrelu/model-epoch-{0}.pth".format(
+    path = "checkpoints/MLP/L_14/batch200-layer3-hidden_dim128-rrelu-initFalse/model-epoch-{0}.pth".format(
         i
     )
     score = main(path)
