@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from load_parameters import load_param
+from init_parameters import load_param
 
 
 class MultiLayerPerceptron(nn.Module):
@@ -40,7 +40,7 @@ class MultiLayerPerceptron(nn.Module):
         # old model
         # sizes = [input_size] + [hidden_dim] * layers + [1]
         print("structure {0}".format(sizes))
-        print(init)
+
         if init:
             parameter = load_param(model_path, input_size)
             print("\nModel parameters initialized")
@@ -165,4 +165,3 @@ class CNN(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
         return x
-

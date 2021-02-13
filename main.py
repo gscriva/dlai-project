@@ -1,18 +1,18 @@
 import os
-from collections import defaultdict
 from parser import parser
 
 import numpy as np
 import torch
 from ignite.contrib.metrics.regression import R2Score
 from torchvision import transforms
-from tqdm import tqdm, trange
 import wandb
+
+# from tqdm import tqdm, trange
 
 from model import MultiLayerPerceptron, CNN
 from score import make_averager
 from utils import load_data, get_mean_std, Normalize
-from load_parameters import load_param
+from init_parameters import freeze_param
 
 
 def main():
@@ -27,7 +27,7 @@ def main():
     print("\nNon-parametric args:\ntest_batch_size: {0}".format(TEST_BATCH_SIZE))
 
     # magic values from mean and std of the whole dataset
-    mean, std = get_mean_std(args.input_size)
+    # mean, std = get_mean_std(args.input_size)
 
     # Initialize directories
     os.makedirs(
@@ -103,7 +103,7 @@ def main():
     )
 
     # define transform to apply
-    normalize = Normalize(mean, std)
+    # normalize = Normalize(mean, std)
     transform_list = [
         torch.tensor,
         # normalize,
@@ -171,7 +171,13 @@ def main():
             # )
 
             train_r2.reset()
+
             model.train()
+
+            # freeze all weights except the first layer
+            if args.init:
+                model = freeze_param(model)
+
             # for data, target in tqdm_iterator:
             for data, target in train_loader:
                 data, target = data.to(device), target.to(device)

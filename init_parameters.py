@@ -17,9 +17,7 @@ def load_param(path: str, x_newsize: int, method: str = "interp") -> OrderedDict
     weight0 = trained_param["layers.linear0.weight"]
 
     # layer 0 must be resized
-    init_method = get_method(
-        method,
-    )
+    init_method = get_method(method,)
     trained_param["layers.linear0.weight"] = init_method(weight0, x_newsize)
 
     return trained_param
@@ -30,7 +28,7 @@ def get_method(method: str) -> Callable:
         init_method = inter_param
     else:
         raise NotImplementedError(
-            "Requested method {0} is not implemeted".format(method)
+            "Requested method {0} is not implemented".format(method)
         )
     return init_method
 
@@ -46,3 +44,11 @@ def inter_param(weight0: torch.Tensor, x_newsize: int) -> torch.Tensor:
     x_weight_new = np.linspace(0, x_size, x_newsize)
     weight = f_weight(x_weight_new, y_weight)
     return torch.Tensor(weight)
+
+
+def freeze_param(model):
+    for name, param in model.named_parameters():
+        # first layer must have requires_grad
+        if name.split(".")[1][-1] == 0:
+            param.requires_grad = False
+    return model
