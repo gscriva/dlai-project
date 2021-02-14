@@ -72,8 +72,6 @@ class MultiLayerPerceptron(nn.Module):
             if self.dropout:
                 fc_layers["dropout{0}".format(i)] = nn.Dropout(p=0.2)
 
-        print(fc_layers)
-
         self.layers = nn.Sequential(fc_layers)
 
     def _get_hidden_dims(self) -> list:
