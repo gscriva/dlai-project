@@ -31,7 +31,7 @@ def main():
 
     # Initialize directories
     os.makedirs(
-        "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}".format(
+        "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-wd{7}".format(
             args.model_type,
             args.input_size - 1,
             args.batch_size,
@@ -39,6 +39,7 @@ def main():
             args.hidden_dim,
             args.activation,
             args.init,
+            args.weight_decay,
         ),
         exist_ok=True,
     )
@@ -61,7 +62,7 @@ def main():
             batchnorm=args.batchnorm,
             activation=args.activation,
             init=args.init,
-            model_path=args.model_path,
+            weights_path=args.weights_path,
         ).to(device)
     elif args.model_type == "CNN":
         model = CNN().to(device)
@@ -89,7 +90,7 @@ def main():
         config.dropout = args.dropout
         config.batchnorm = args.batchnorm
         config.activation = args.activation
-        config.model_path = args.model_path
+        config.weights_path = args.weights_path
         # parameter for wandb update
         config.log_interval = 5
 
@@ -265,7 +266,7 @@ def main():
                 best_losses = valid_loss
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}/best-model.pth".format(
+                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-wd{7}/best-model.pth".format(
                         args.model_type,
                         args.input_size - 1,
                         args.batch_size,
@@ -273,6 +274,7 @@ def main():
                         args.hidden_dim,
                         args.activation,
                         args.init,
+                        args.weight_decay,
                     ),
                 )
 
@@ -280,7 +282,7 @@ def main():
             if epoch % 1 == 0:
                 torch.save(
                     checkpoint_dict,
-                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}/model-epoch-{7}.pth".format(
+                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-wd{7}/model-epoch-{8}.pth".format(
                         args.model_type,
                         args.input_size - 1,
                         args.batch_size,
@@ -288,6 +290,7 @@ def main():
                         args.hidden_dim,
                         args.activation,
                         args.init,
+                        args.weight_decay,
                         epoch,
                     ),
                 )

@@ -104,7 +104,7 @@ def parser():
         help="dataset directory used for testing",
     )
     parser.add_argument(
-        "--model_path",
+        "--weights_path",
         default=None,
         type=str,
         metavar="PATH",

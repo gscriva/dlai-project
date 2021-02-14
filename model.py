@@ -19,7 +19,7 @@ class MultiLayerPerceptron(nn.Module):
         batchnorm=False,
         activation="rrelu",
         init=False,
-        model_path=None,
+        weights_path=None,
     ):
         super(MultiLayerPerceptron, self).__init__()
 
@@ -42,8 +42,12 @@ class MultiLayerPerceptron(nn.Module):
         print("structure {0}".format(sizes))
 
         if init:
-            parameter = load_param(model_path, input_size)
-            print("\nModel parameters initialized")
+            parameter = load_param(weights_path, input_size)
+            print(
+                "\nModel parameters initialized using weights in {0}".format(
+                    weights_path
+                )
+            )
 
         fc_layers = OrderedDict()
         for i in range(len(sizes) - 1):
@@ -67,6 +71,8 @@ class MultiLayerPerceptron(nn.Module):
 
             if self.dropout:
                 fc_layers["dropout{0}".format(i)] = nn.Dropout(p=0.2)
+
+        print(fc_layers)
 
         self.layers = nn.Sequential(fc_layers)
 
