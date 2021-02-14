@@ -49,6 +49,8 @@ def inter_param(weight0: torch.Tensor, x_newsize: int) -> torch.Tensor:
 def freeze_param(model):
     for name, param in model.named_parameters():
         # first layer must have requires_grad
-        if name.split(".")[1][-1] == 0:
-            param.requires_grad = False
+        if name.split(".")[1][-1] == "0":
+            continue
+        param.requires_grad = False
+
     return model
