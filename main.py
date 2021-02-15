@@ -108,7 +108,7 @@ def main():
     # import scheduler to reduce lr dinamically
     if args.scheduler:
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            opt, factor=0.05, verbose=True
+            opt, factor=0.5, verbose=True
         )
 
     # define transform to apply
