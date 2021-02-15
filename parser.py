@@ -41,11 +41,11 @@ def parser():
         help="use this flag to save the model on wandb",
     )
     parser.add_argument(
-        "-i",
-        "--init_model",
-        dest="init",
+        "-s",
+        "--scheduler",
+        dest="scheduler",
         action="store_true",
-        help="use this flag to load the model's parameters",
+        help="use this flag to use scheduler during training",
     )
     parser.add_argument(
         "--batch_size",

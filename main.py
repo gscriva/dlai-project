@@ -11,7 +11,7 @@ import wandb
 
 from model import MultiLayerPerceptron, CNN
 from score import make_averager
-from utils import load_data, get_mean_std, Normalize
+from utils import load_data  # get_mean_std, Normalize
 from init_parameters import freeze_param
 
 
@@ -24,6 +24,8 @@ def main():
     # Fixed parameters
     OUTPUT_NAME = "evalues"
     TEST_BATCH_SIZE = 500
+    # to be pass to the model
+    init = args.weights_path is not None
     print("\nNon-parametric args:\ntest_batch_size: {0}".format(TEST_BATCH_SIZE))
 
     # magic values from mean and std of the whole dataset
@@ -38,7 +40,7 @@ def main():
             args.layers,
             args.hidden_dim,
             args.activation,
-            args.init,
+            init,
             args.weight_decay,
         ),
         exist_ok=True,
@@ -61,7 +63,7 @@ def main():
             dropout=args.dropout,
             batchnorm=args.batchnorm,
             activation=args.activation,
-            init=args.init,
+            init=init,
             weights_path=args.weights_path,
         ).to(device)
     elif args.model_type == "CNN":
@@ -102,6 +104,12 @@ def main():
     opt = torch.optim.Adam(
         model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay
     )
+
+    # import scheduler to reduce lr dinamically
+    if args.scheduler:
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            opt, factor=0.05, verbose=True
+        )
 
     # define transform to apply
     # normalize = Normalize(mean, std)
@@ -176,7 +184,7 @@ def main():
             model.train()
 
             # freeze all weights except the first layer
-            if args.init:
+            if init:
                 model = freeze_param(model)
 
             # for data, target in tqdm_iterator:
@@ -226,11 +234,15 @@ def main():
 
             print(
                 f"\n\nEpoch: {epoch}\n"
-                f"Train set: Average loss: {train_loss_averager(None):.4f}\n"
+                f"Train set: Average loss: {train_loss_averager(None):.5f}\n"
                 f"Train set: R2 score: {train_r2.compute():.4f}\n"
-                f"Validation set: Average loss: {valid_loss_averager(None):.4f}\n"
+                f"Validation set: Average loss: {valid_loss_averager(None):.5f}\n"
                 f"Validation set: R2 score: {valid_r2.compute():.4f}\n"
             )
+
+            if args.scheduler:
+                # scheduler update
+                scheduler.step(valid_loss_averager(None))
 
             if args.save_wandb:
                 # save losses on wandb
@@ -273,7 +285,7 @@ def main():
                         args.layers,
                         args.hidden_dim,
                         args.activation,
-                        args.init,
+                        init,
                         args.weight_decay,
                     ),
                 )
@@ -289,7 +301,7 @@ def main():
                         args.layers,
                         args.hidden_dim,
                         args.activation,
-                        args.init,
+                        init,
                         args.weight_decay,
                         epoch,
                     ),
