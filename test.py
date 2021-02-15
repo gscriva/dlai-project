@@ -1,5 +1,3 @@
-import os
-from collections import defaultdict
 import pickle
 
 import numpy as np
@@ -7,10 +5,10 @@ import torch
 from ignite.contrib.metrics.regression import R2Score
 from torchvision import transforms
 
-from model import MultiLayerPerceptron, CNN
+from model import MultiLayerPerceptron
 from score import make_averager
-from utils import load_data, get_mean_std, Normalize
-from load_parameters import load_param
+from utils import load_data
+from init_parameters import freeze_param
 
 
 def main(
@@ -33,7 +31,7 @@ def main(
 
     # import model, set its parameter as double and move it to GPU (if available)
     model = MultiLayerPerceptron(
-        layers, hidden_dim, 2 * (input_size - 1), init=init, model_path=model_path,
+        layers, hidden_dim, 2 * (input_size - 1), init=init, weights_path=model_path,
     ).to(device)
 
     # Change type of weights
@@ -76,12 +74,16 @@ def main(
         start_epoch = 0
 
         # for epoch in trange(epochs, total=epochs, leave=False):
-        for epoch in range(start_epoch, 100):
+        for epoch in range(start_epoch, 30):
             # mantain a running average of the loss
             train_loss_averager = make_averager()
 
             train_r2.reset()
             model.train()
+
+            if init:
+                model = freeze_param(model)
+
             # for data, target in tqdm_iterator:
             for data, target in train_loader:
                 data, target = data.to(device), target.to(device)
@@ -100,7 +102,6 @@ def main(
                 opt.step()
 
                 # update loss and R2 values iteratively
-                # WARNING the computed values are means over the training
                 train_loss_averager(loss.item())
                 train_r2.update((pred, target))
 
@@ -123,8 +124,9 @@ def main(
                     valid_r2.update((pred, target))
 
             print(
-                f"\nValidation set: Average loss: {valid_loss_averager(None):.4f}\n"
-                f"Validation set: R2 score: {valid_r2.compute():.4f}\n"
+                "Epoch: {0}\n".format(epoch),
+                f"Validation set: Average loss: {valid_loss_averager(None):.4f}\n"
+                f"Validation set: R2 score: {valid_r2.compute():.4f}\n",
             )
 
             # update loss lists
@@ -143,13 +145,12 @@ torch.set_num_threads(8)
 torch.set_num_interop_threads(1)
 
 for i in range(201):
-    # print(i)
+    print("\n\nEvaluating model {0}".format(i))
     path = "checkpoints/MLP/L_14/batch200-layer3-hidden_dim128-rrelu-initFalse/model-epoch-{0}.pth".format(
         i
     )
     score = main(path)
     val_scores.append(score)
 
-with open("score.pickle", "wb") as handle:
+with open("score_1layer.pickle", "wb") as handle:
     pickle.dump(val_scores, handle)
-

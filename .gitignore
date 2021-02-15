@@ -135,7 +135,7 @@ dmypy.json
 *.npz
 dataset/*
 notebooks/*
-.pickle
+*.pickle
 
 # wandb folder
 wandb/*
