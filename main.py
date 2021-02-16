@@ -67,7 +67,13 @@ def main():
             weights_path=args.weights_path,
         ).to(device)
     elif args.model_type == "CNN":
-        model = CNN().to(device)
+
+        model = CNN(
+            2 * (args.input_size - 1),
+            dropout=args.dropout,
+            batchnorm=args.batchnorm,
+            activation=args.activation,
+        ).to(device)
     else:
         raise NotImplementedError("Only MLP and CNN are accepted as model type")
 

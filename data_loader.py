@@ -79,29 +79,48 @@ class Speckle(Dataset):
         if model == "MLP":
             # only input_size coef are non zeros
             self.dataset = data[data_name][idx, 1:input_size]
-            # Fourier data are complex, so we take real and imag part
-            # as feature vector
-            self._get_real_ds()
         elif model == "CNN":
-            # we load all the non zero coef, even if
-            # are symmetric
             self.dataset = data[data_name][idx, :input_size]
-            self.dataset = np.append(
-                self.dataset, data[data_name][idx, -input_size + 1 :], axis=1
-            )
-            self.dataset = np.fft.fftshift(self.dataset)
-            self._get2ch()
+            self._get_channels()
         else:
             raise NotImplementedError("Only MLP and CNN are accepted")
+
+        # Fourier data are complex, so we take real and imag part
+        # as feature vector
+        self._get_real_ds()
 
     def _get_real_ds(self):
         real_ds = np.real(self.dataset)
         imag_ds = np.imag(self.dataset)
-        self.dataset = np.append(real_ds, imag_ds, axis=1)
+        self.dataset = np.append(real_ds, imag_ds, axis=-1)
 
-    def _get2ch(self):
-        real_ds = np.real(self.dataset)
-        imag_ds = np.imag(self.dataset)
-        self.dataset = np.stack((real_ds, imag_ds))
-        self.dataset = np.swapaxes(self.dataset, 0, 1)
+        def _get_channels(self):
+        """This method fill 4 channels using available data.
+        If the smaller size is passed, only the first channel will be used.
+        If the medium size is passed the first two channels.
+        If the larger one is passed, we fill two extra channels, since every time 
+        the input size is double.
+        """
+        if self.input_size == 15:
+            ch1 = self.dataset[..., 1:]
+            ch2 = np.zeros_like(ch1)
+            ch3 = np.zeros_like(ch1)
+            ch4 = np.zeros_like(ch1)
+        elif self.input_size == 29:
+            ch1 = self.dataset[..., 2::2]
+            ch2 = self.dataset[..., 1::2]
+            ch3 = np.zeros_like(ch1)
+            ch4 = np.zeros_like(ch1)
+        elif self.input_size == 57:
+            ch1 = self.dataset[..., 4::4]
+            ch2 = self.dataset[..., 2::4]
+            ch3 = self.dataset[..., 3::4]
+            ch4 = self.dataset[..., 1::4]
+            print(ch1.shape, ch2.shape, ch3.shape, ch4.shape)
+        else:
+            raise NotImplementedError(
+                "Size {0} not implemented".format(self.input_size)
+            )
 
+        # create an image n_ch x 14
+        self.dataset = np.stack((ch1, ch2, ch3, ch4), axis=1)

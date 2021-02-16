@@ -121,6 +121,100 @@ class MultiLayerPerceptron(nn.Module):
 
 
 class CNN(nn.Module):
+    def __init__(
+        self, input_size, dropout=False, batchnorm=False, activation="rrelu",
+    ):
+
+        super(CNN, self).__init__()
+
+        self.input_size = input_size
+        self.dropout = dropout
+        self.batchnorm = batchnorm
+        self.activation = self._get_activation_func(activation)
+
+        self.conv1 = self.convlayer(4, 64, 28)
+
+        self.fc1 = self.fclayer(64, 32)
+        self.fc2 = self.fclayer(32, 16)
+
+        self.fc3 = nn.Sequential(nn.Linear(16, 1))
+
+    def convlayer(
+        self,
+        in_ch: int,
+        out_ch: int,
+        kernel_size: int,
+        padding: int = 0,
+        stride: int = 1,
+    ):
+        layer = OrderedDict()
+
+        layer["conv"] = nn.Conv1d(
+            in_ch,
+            out_ch,
+            kernel_size,
+            padding=padding,
+            padding_mode="reflect",
+            stride=stride,
+        )
+        if self.batchnorm:
+            layer["batch"] = nn.BatchNorm1d(out_ch)
+
+        if self.dropout:
+            layer["dropout"] = nn.Dropout()
+
+        layer["activation"] = self.activation
+
+        return nn.Sequential(layer)
+
+    def fclayer(self, in_ch, out_ch):
+        layer = OrderedDict()
+
+        layer["linear"] = nn.Linear(in_ch, out_ch)
+
+        if self.batchnorm:
+            layer["batch"] = nn.BatchNorm1d(out_ch)
+
+        if self.dropout:
+            layer["dropout"] = nn.Dropout()
+
+        layer["activation"] = self.activation
+
+        return nn.Sequential(layer)
+
+    def _get_activation_func(self, activation: str) -> nn.modules.activation.ReLU:
+        """Returns the requested activation function.
+
+        Args:
+            activation (str): Name of the activation function.
+
+        Returns:
+            nn.modules.activation.ReLU: The chosen activationfunction
+        """
+        if activation == "relu":
+            function = nn.ReLU()
+        elif activation == "prelu":
+            function = nn.PReLU()
+        elif activation == "rrelu":
+            function = nn.RReLU()
+        elif activation == "leakyrelu":
+            function = nn.LeakyReLU()
+        elif activation == "gelu":
+            function = nn.GELU()
+        else:
+            raise NotImplementedError("Activation function not implemented")
+        return function
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = x.view(-1, 64)
+        x = self.fc1(x)
+        x = self.fc2(x)
+        x = self.fc3(x)
+        return x
+
+
+class OldCNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
 
