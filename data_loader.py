@@ -53,14 +53,16 @@ class Speckle(Dataset):
         if input_size is None:
             input_size = len_data
 
+        # define attributes
+        self.evalues = data[output_name][idx]
+        self.transform = transform
+        self.model = model
+        self.input_size = input_size
+
         if data_name == "speckleF":
             self._get_correct_ds(data, data_name, idx, input_size, model)
         else:
             self.dataset = data[data_name][idx, :input_size]
-
-        self.evalues = data[output_name][idx]
-        self.transform = transform
-        self.model = model
 
     def __len__(self):
         return (self.evalues).size
@@ -75,7 +77,7 @@ class Speckle(Dataset):
         evalues = torch.tensor(evalues)
         return (image, evalues)
 
-    def _get_correct_ds(self, data, data_name, idx, input_size, model):
+    def _get_correct_ds(self, data, data_name, idx, input_size, model) -> None:
         if model == "MLP":
             # only input_size coef are non zeros
             self.dataset = data[data_name][idx, 1:input_size]
@@ -89,12 +91,12 @@ class Speckle(Dataset):
         # as feature vector
         self._get_real_ds()
 
-    def _get_real_ds(self):
+    def _get_real_ds(self) -> None:
         real_ds = np.real(self.dataset)
         imag_ds = np.imag(self.dataset)
         self.dataset = np.append(real_ds, imag_ds, axis=-1)
 
-        def _get_channels(self):
+    def _get_channels(self) -> None:
         """This method fill 4 channels using available data.
         If the smaller size is passed, only the first channel will be used.
         If the medium size is passed the first two channels.
@@ -116,7 +118,6 @@ class Speckle(Dataset):
             ch2 = self.dataset[..., 2::4]
             ch3 = self.dataset[..., 3::4]
             ch4 = self.dataset[..., 1::4]
-            print(ch1.shape, ch2.shape, ch3.shape, ch4.shape)
         else:
             raise NotImplementedError(
                 "Size {0} not implemented".format(self.input_size)

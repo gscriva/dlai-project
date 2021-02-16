@@ -132,21 +132,21 @@ class CNN(nn.Module):
         self.batchnorm = batchnorm
         self.activation = self._get_activation_func(activation)
 
-        self.conv1 = self.convlayer(4, 64, 28)
+        self.conv1 = self._convlayer(4, 64, 28)
 
-        self.fc1 = self.fclayer(64, 32)
-        self.fc2 = self.fclayer(32, 16)
+        self.fc1 = self._fclayer(64, 32)
+        self.fc2 = self._fclayer(32, 16)
 
         self.fc3 = nn.Sequential(nn.Linear(16, 1))
 
-    def convlayer(
+    def _convlayer(
         self,
         in_ch: int,
         out_ch: int,
         kernel_size: int,
         padding: int = 0,
         stride: int = 1,
-    ):
+    ) -> torch.nn.modules.container.Sequential:
         layer = OrderedDict()
 
         layer["conv"] = nn.Conv1d(
@@ -167,7 +167,7 @@ class CNN(nn.Module):
 
         return nn.Sequential(layer)
 
-    def fclayer(self, in_ch, out_ch):
+    def _fclayer(self, in_ch, out_ch) -> torch.nn.modules.container.Sequential:
         layer = OrderedDict()
 
         layer["linear"] = nn.Linear(in_ch, out_ch)
