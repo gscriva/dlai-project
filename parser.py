@@ -10,7 +10,7 @@ def parser():
         default="",
         type=str,
         metavar="PATH",
-        help="path to .pth file checkpoint (default: None)",
+        help="path to .pth file checkpoint",
     )
     parser.add_argument(
         "-t",
@@ -77,28 +77,28 @@ def parser():
     )
     parser.add_argument(
         "--weight_decay",
-        default=0,
+        default=0.0,
         type=float,
         metavar="N",
-        help="learning rate (default 0)",
+        help="learning rate (default 0.)",
     )
     parser.add_argument(
         "--activation",
         default="rrelu",
         type=str,
-        metavar="PATH",
+        metavar="string",
         help="specify activation function (default rrelu)",
     )
     parser.add_argument(
         "--data_dir",
-        default="dataset/train_data_L14.npz",
+        default="",
         type=str,
         metavar="PATH",
         help="dataset directory (used for both train and validation)",
     )
     parser.add_argument(
         "--test_data_dir",
-        default="dataset/test_data_L14.npz",
+        default="",
         type=str,
         metavar="PATH",
         help="dataset directory used for testing",
@@ -108,7 +108,7 @@ def parser():
         default=None,
         type=str,
         metavar="PATH",
-        help="dataset directory used to load model's parameters",
+        help="dataset directory used to load model's parameters (default: None)",
     )
     parser.add_argument(
         "--input_name",
