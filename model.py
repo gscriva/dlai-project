@@ -122,22 +122,31 @@ class MultiLayerPerceptron(nn.Module):
 
 class CNN(nn.Module):
     def __init__(
-        self, input_size, dropout=False, batchnorm=False, activation="rrelu",
+        self, dropout=False, batchnorm=False, activation="rrelu",
     ):
 
         super(CNN, self).__init__()
 
-        self.input_size = input_size
         self.dropout = dropout
         self.batchnorm = batchnorm
         self.activation = self._get_activation_func(activation)
 
-        self.conv1 = self._convlayer(4, 64, 28)
+        self.conv1 = self._convlayer(4, 128, 28)
 
-        self.fc1 = self._fclayer(64, 32)
-        self.fc2 = self._fclayer(32, 16)
+        self.fc1 = self._fclayer(128, 64)
+        self.fc2 = self._fclayer(64, 32)
+        self.fc3 = self._fclayer(32, 16)
 
-        self.fc3 = nn.Sequential(nn.Linear(16, 1))
+        self.fc4 = nn.Sequential(nn.Linear(16, 1))
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = x.view(-1, 128)
+        x = self.fc1(x)
+        x = self.fc2(x)
+        x = self.fc3(x)
+        x = self.fc4(x)
+        return x
 
     def _convlayer(
         self,
@@ -146,7 +155,7 @@ class CNN(nn.Module):
         kernel_size: int,
         padding: int = 0,
         stride: int = 1,
-    ) -> torch.nn.modules.container.Sequential:
+    ) -> nn.modules.container.Sequential:
         layer = OrderedDict()
 
         layer["conv"] = nn.Conv1d(
@@ -167,7 +176,7 @@ class CNN(nn.Module):
 
         return nn.Sequential(layer)
 
-    def _fclayer(self, in_ch, out_ch) -> torch.nn.modules.container.Sequential:
+    def _fclayer(self, in_ch, out_ch) -> nn.modules.container.Sequential:
         layer = OrderedDict()
 
         layer["linear"] = nn.Linear(in_ch, out_ch)
@@ -204,14 +213,6 @@ class CNN(nn.Module):
         else:
             raise NotImplementedError("Activation function not implemented")
         return function
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = x.view(-1, 64)
-        x = self.fc1(x)
-        x = self.fc2(x)
-        x = self.fc3(x)
-        return x
 
 
 class OldCNN(nn.Module):
