@@ -91,10 +91,9 @@ def parser():
     )
     parser.add_argument(
         "--data_dir",
-        default="",
+        nargs="+",
         type=str,
-        metavar="PATH",
-        help="dataset directory (used for both train and validation)",
+        help=" list of datasets directory (used for both train and validation)",
     )
     parser.add_argument(
         "--test_data_dir",
@@ -126,10 +125,10 @@ def parser():
     )
     parser.add_argument(
         "--input_size",
-        default=None,
+        nargs="+",
         type=int,
-        metavar="N",
-        help="size of input (if smaller than its natural size)",
+        help="list of input sizes (if smaller than its natural size)",
+        required=True,
     )
     parser.add_argument(
         "--hidden_dim",
@@ -146,7 +145,7 @@ def parser():
         help="number of the hidden layers (default 3)",
     )
     parser.add_argument(
-        "--num_workers",
+        "--workers",
         default=8,
         type=int,
         metavar="N",

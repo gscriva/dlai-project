@@ -1,24 +1,24 @@
 import os
 from multiprocessing import Pool, cpu_count
 from math import floor
-from typing import Any, Callable
+from typing import Any, Callable, List
 
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.utils.data import ConcatDataset
 from torchvision import transforms
 import matplotlib.pyplot as plt
-import tqdm
+import wandb
 
-from model import MultiLayerPerceptron
 from data_loader import Speckle
 
 
 def load_data(
-    dataset_path: str,
+    dataset_path: List[str],
     input_name: str,
     output_name: str,
-    input_size: int,
+    input_size: List[int],
     batch_size: int,
     val_batch_size: int,
     transform: transforms.transforms.Compose = None,
@@ -28,10 +28,10 @@ def load_data(
     """Defines dataset as a class and return two loader, for training and validation set
 
     Args:
-        dataset_path (str): Path to the files.
+        dataset_path (List[str]): Path(s) to the files.
         input_name (str): Name of the file in the archive to be used as input.
         output_name (str): Name of the output values in the archive.
-        input_size (int): Size of the non-zero data to load.
+        input_size (List[int]): Size(s) of the non-zero data to load.
         batch_size (int): Size of the batch during the training.
         val_batch_size (int): Size of the batch during the validation.
         transform (transforms.transforms.Compose, optional): Transforms to apply to the incoming dataset. Defaults to None.
@@ -50,28 +50,40 @@ def load_data(
     else:
         train_size = 0.9
 
-    train_set = Speckle(
-        dataset_path,
-        input_name,
-        input_size,
-        transform=transform,
-        output_name=output_name,
-        train=True,
-        train_size=train_size,
-        seed=0,
-        model=model,
-    )
-    val_set = Speckle(
-        dataset_path,
-        input_name,
-        input_size,
-        transform=transform,
-        output_name=output_name,
-        train=False,
-        train_size=train_size,
-        seed=0,
-        model=model,
-    )
+    train_datasets = []
+    val_datasets = []
+    for i, ds in enumerate(dataset_path):
+        train_datasets.append(
+            Speckle(
+                ds,
+                input_name,
+                input_size[i],
+                transform=transform,
+                output_name=output_name,
+                train=True,
+                train_size=train_size,
+                seed=0,
+                model=model,
+            )
+        )
+
+        val_datasets.append(
+            Speckle(
+                ds,
+                input_name,
+                input_size[i],
+                transform=transform,
+                output_name=output_name,
+                train=False,
+                train_size=train_size,
+                seed=0,
+                model=model,
+            )
+        )
+
+    # train or test with one or more datasets
+    train_set = ConcatDataset(train_datasets)
+    val_set = ConcatDataset(val_datasets)
 
     train_loader = torch.utils.data.DataLoader(
         train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers
@@ -134,7 +146,7 @@ def save_as_npz(
     return
 
 
-def read_arr_help(args) -> Callable[[str, int, Any, str, bool], tuple]:
+def read_arr_help(args: Any) -> Callable[[str, int, Any, str, bool], tuple]:
     """A helper for read_arr used in parallel mode to unpack arguments.
 
     Args:
@@ -211,6 +223,40 @@ def split_ds(datas: list, seed: int = 42, test_size: float = 0.2) -> dict:
         data_dict["train"].append((data[0][np.logical_not(idx), ...], data[1]))
         data_dict["test"].append((data[0][idx, ...], data[1]))
     return data_dict
+
+
+def config_wandb(args: Any, model: nn.Module) -> None:
+    """Save on wandb current training settings.
+
+    Args:
+        args (Any): Arguments defined as in parser. 
+        model (nn.Module): Model currently used.
+    """
+    # initialize wandb remote repo
+    wandb.init(project="dlai-project")
+
+    # wandb config hyperparameters
+    config = wandb.config
+    config.batch_size = args.batch_size
+    config.val_batch_size = args.val_batch_size
+    config.epochs = args.epochs
+    config.lr = args.learning_rate
+    config.weight_decay = args.weight_decay
+    config.num_workers = args.num_workers
+    config.model_type = args.model_type
+    config.hidden_dim = args.hidden_dim
+    config.layers = args.layers
+    config.dropout = args.dropout
+    config.batchnorm = args.batchnorm
+    config.activation = args.activation
+    config.weights_path = args.weights_path
+
+    # parameter for wandb update
+    config.log_interval = 5
+
+    # save model parameters
+    wandb.watch(model, log="all")
+    return
 
 
 def get_mean_std(input_size: int) -> tuple:
