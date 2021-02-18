@@ -11,7 +11,7 @@ import wandb
 
 from model import MultiLayerPerceptron, CNN
 from score import make_averager
-from utils import load_data  # get_mean_std, Normalize
+from utils import load_data, config_wandb  # get_mean_std, Normalize
 from init_parameters import freeze_param
 
 
@@ -19,7 +19,7 @@ def main():
     # Load parser
     pars = parser()
     args = pars.parse_args()
-    print("Arguments:\n{}\n\n".format(args))
+    print("\n\nArguments:\n{}\n\n".format(args))
 
     # Fixed parameters
     OUTPUT_NAME = "evalues"
@@ -32,22 +32,23 @@ def main():
     # mean, std = get_mean_std(args.input_size)
 
     # Initialize directories
-    os.makedirs(
-        "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-wd{7}".format(
-            args.model_type,
-            args.input_size - 1,
-            args.batch_size,
-            args.layers,
-            args.hidden_dim,
-            args.activation,
-            init,
-            args.weight_decay,
-        ),
-        exist_ok=True,
+    save_path = "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-wd{7}".format(
+        args.model_type,
+        args.input_size[0] - 1 if len(args.input_size) == 1 else args.input_size,
+        args.batch_size,
+        args.layers,
+        args.hidden_dim,
+        args.activation,
+        init,
+        args.weight_decay,
     )
+    os.makedirs(
+        save_path, exist_ok=True,
+    )
+    print("\nSave checkpoints in {0}".format(save_path))
 
     # limit number of CPUs
-    torch.set_num_threads(args.num_workers)
+    torch.set_num_threads(args.workers)
     # And set inter-parallel processes
     torch.set_num_interop_threads(1)
 
@@ -59,7 +60,8 @@ def main():
         model = MultiLayerPerceptron(
             args.layers,
             args.hidden_dim,
-            2 * (args.input_size - 1),
+            # MLP cannot train with multiple sizes
+            2 * (args.input_size[0] - 1),
             dropout=args.dropout,
             batchnorm=args.batchnorm,
             activation=args.activation,
@@ -67,12 +69,8 @@ def main():
             weights_path=args.weights_path,
         ).to(device)
     elif args.model_type == "CNN":
-
         model = CNN(
-            2 * (args.input_size - 1),
-            dropout=args.dropout,
-            batchnorm=args.batchnorm,
-            activation=args.activation,
+            dropout=args.dropout, batchnorm=args.batchnorm, activation=args.activation,
         ).to(device)
     else:
         raise NotImplementedError("Only MLP and CNN are accepted as model type")
@@ -80,30 +78,9 @@ def main():
     # Change type of weights
     model = model.double()
 
+    # save current training on wandb
     if args.save_wandb:
-        # initialize wandb remote repo
-        wandb.init(project="dlai-project")
-
-        # wandb config hyperparameters
-        config = wandb.config
-        config.batch_size = args.batch_size
-        config.val_batch_size = args.val_batch_size
-        config.epochs = args.epochs
-        config.lr = args.learning_rate
-        config.weight_decay = args.weight_decay
-        config.num_workers = args.num_workers
-        config.model_type = args.model_type
-        config.hidden_dim = args.hidden_dim
-        config.layers = args.layers
-        config.dropout = args.dropout
-        config.batchnorm = args.batchnorm
-        config.activation = args.activation
-        config.weights_path = args.weights_path
-        # parameter for wandb update
-        config.log_interval = 5
-
-        # save model parameters
-        wandb.watch(model, log="all")
+        config_wandb(args, model)
 
     # import loss and optimizer
     criterion = torch.nn.MSELoss()
@@ -134,7 +111,7 @@ def main():
         args.batch_size,
         args.val_batch_size,
         transform=transform,
-        num_workers=args.num_workers,
+        num_workers=args.workers,
         model=args.model_type,
     )
 
@@ -282,35 +259,12 @@ def main():
             # Save checkpoint every epoch and when a better model is produced
             if valid_loss < best_losses:
                 best_losses = valid_loss
-                torch.save(
-                    checkpoint_dict,
-                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-wd{7}/best-model.pth".format(
-                        args.model_type,
-                        args.input_size - 1,
-                        args.batch_size,
-                        args.layers,
-                        args.hidden_dim,
-                        args.activation,
-                        init,
-                        args.weight_decay,
-                    ),
-                )
+                torch.save(checkpoint_dict, save_path + "/best-model.pth")
 
             # save model every epoch
             if epoch % 1 == 0:
                 torch.save(
-                    checkpoint_dict,
-                    "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-wd{7}/model-epoch-{8}.pth".format(
-                        args.model_type,
-                        args.input_size - 1,
-                        args.batch_size,
-                        args.layers,
-                        args.hidden_dim,
-                        args.activation,
-                        init,
-                        args.weight_decay,
-                        epoch,
-                    ),
+                    checkpoint_dict, save_path + "/model-epoch-{0}.pth".format(epoch,),
                 )
 
         if args.save_wandb:
@@ -335,7 +289,7 @@ def main():
             TEST_BATCH_SIZE,
             0,
             transform=transform,
-            num_workers=args.num_workers,
+            num_workers=args.workers,
             model=args.model_type,
         )
 
