@@ -19,7 +19,7 @@ def main():
     # Load parser
     pars = parser()
     args = pars.parse_args()
-    print("\n\nArguments:\n{}\n\n".format(args))
+    print("\n\nArguments:\n{0}\n".format(args))
 
     # Fixed parameters
     OUTPUT_NAME = "evalues"
@@ -45,7 +45,7 @@ def main():
     os.makedirs(
         save_path, exist_ok=True,
     )
-    print("\nSave checkpoints in {0}".format(save_path))
+    print("\nSave checkpoints in {0}\n".format(save_path))
 
     # limit number of CPUs
     torch.set_num_threads(args.workers)
