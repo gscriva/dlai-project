@@ -121,7 +121,8 @@ def save_as_npz(
             else:
                 # valid for speckleR, just real
                 paths.append((path, data_size, 1))
-    # append extra vector with x axis
+
+    # append extra vector with x and csi axis
     extra_paths = []
     for path in paths:
         filename = os.path.basename(path[0])[:-4]
@@ -163,7 +164,7 @@ def read_arr(
     data_size: int,
     usecols: Any = 0,
     outname: str = None,
-    outfile: bool = False,
+    outfile: str = None,
 ) -> tuple:
     """This function reads .txt or .dat data and saves them as .npy or returns them as
         a numpy array.
@@ -171,9 +172,9 @@ def read_arr(
     Args:
         filepath (str): Path to the data.
         data_size (int): Size of a single element, since they are stacked vertically.
-        usecols (int or tuple, optional): Specifies column (or columns) to import. Defaults to 0.
-        outname (str, optional): To set iff the filename is not the original name in the path. Defaults to None.
-        outfile (bool, optional): Name of the file to be saved, is None output is not saved. Defaults to False.
+        usecols (int or tuple, optional): Specifies column (or columns) to import. Default to 0.
+        outname (str, optional): To set iff the filename is not the original name in the path. Default to None.
+        outfile (str, optional): Name of the file to be saved, if None output is not saved. Default to None.
 
     Returns:
         tuple: array and array's name according to its filename or the optional outname.
@@ -183,19 +184,20 @@ def read_arr(
     except:
         print("No such file in {0}".format(filepath))
 
-    if outname:
+    if outname is not None:
         name = outname
     else:
         # remove extension from filename
         name = os.path.basename(filepath)[:-4]
 
     out = np.loadtxt(filepath, usecols=usecols)
+
     if type(usecols) is tuple:
         # input is complex
         out = out[:, 0] + 1j * out[:, 1]
     out = np.squeeze(np.reshape(out, (-1, data_size)))
 
-    if outfile:
+    if outfile is not None:
         np.save(name + "npy", np.getfromtxt(filepath, usecols=usecols))
         print("Saved as {0}".format(outfile))
         out = None
@@ -242,7 +244,7 @@ def config_wandb(args: Any, model: nn.Module) -> None:
     config.epochs = args.epochs
     config.lr = args.learning_rate
     config.weight_decay = args.weight_decay
-    config.num_workers = args.num_workers
+    config.num_workers = args.workers
     config.model_type = args.model_type
     config.hidden_dim = args.hidden_dim
     config.layers = args.layers
@@ -287,16 +289,16 @@ def get_mean_std(input_size: int) -> tuple:
     return (mean, std)
 
 
-class Normalize(nn.Module):
-    def __init__(self, mean, std):
-        super(Normalize, self).__init__()
-        self.mean = torch.tensor(mean)
-        self.std = torch.tensor(std)
+# class Normalize(nn.Module):
+#     def __init__(self, mean, std):
+#         super(Normalize, self).__init__()
+#         self.mean = torch.tensor(mean)
+#         self.std = torch.tensor(std)
 
-    def __call__(self, x):
-        x = x - self.mean
-        x = x / self.std
-        return x
+#     def __call__(self, x):
+#         x = x - self.mean
+#         x = x / self.std
+#         return x
 
 
 ##################### PLOT FUNCTIONS ########################
