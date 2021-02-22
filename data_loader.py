@@ -83,6 +83,9 @@ class Speckle(Dataset):
             self.dataset = data[data_name][idx, 1:input_size]
         elif model == "CNN":
             self.dataset = data[data_name][idx, :input_size]
+            self._get_4channels()
+        elif model == "SmallCNN":
+            self.dataset = data[data_name][idx, :input_size]
             self._get_channels()
         else:
             raise NotImplementedError("Only MLP and CNN are accepted")
@@ -96,11 +99,11 @@ class Speckle(Dataset):
         imag_ds = np.imag(self.dataset)
         self.dataset = np.append(real_ds, imag_ds, axis=-1)
 
-    def _get_channels(self) -> None:
+    def _get_4channels(self) -> None:
         """This method fill 4 channels using available data.
         If the smaller size is passed, only the first channel will be used.
         If the medium size is passed the first two channels.
-        If the larger one is passed, we fill two extra channels, since every time 
+        If the larger one is passed, we fill two extra channels, since everytime 
         the input size is double.
         """
         if self.input_size == 15:
@@ -123,5 +126,34 @@ class Speckle(Dataset):
                 "Size {0} not implemented".format(self.input_size)
             )
 
-        # create an image n_ch x 14
+        # create an image N x 4 x 14
         self.dataset = np.stack((ch1, ch2, ch3, ch4), axis=1)
+
+    def _get_channels(self) -> None:
+        batch_size = self.dataset.shape[0]
+        channels = np.zeros((batch_size, 6, 7), dtype=np.complex128)
+
+        if self.input_size == 8:
+            channels[:, 0, :] = self.dataset[..., 1:]
+        elif self.input_size == 15:
+            channels[:, 0, :] = self.dataset[..., 2::2]
+            channels[:, 1, :] = self.dataset[..., 1::2]
+        elif self.input_size == 29:
+            channels[:, 0, :] = self.dataset[..., 4::4]
+            channels[:, 1, :] = self.dataset[..., 2::4]
+            channels[:, 2, :] = self.dataset[..., 3::4]
+            channels[:, 3, :] = self.dataset[..., 1::4]
+        elif self.input_size == 57:
+            channels[:, 0, :] = self.dataset[..., 8::8]
+            channels[:, 1, :] = self.dataset[..., 4::8]
+            channels[:, 2, :] = self.dataset[..., 6::8]
+            channels[:, 3, :] = self.dataset[..., 2::8]
+            channels[:, 4, :] = self.dataset[..., 3::8]
+            channels[:, 5, :] = self.dataset[..., 1::8]
+        else:
+            raise NotImplementedError(
+                "Size {0} not implemented".format(self.input_size)
+            )
+
+        # create a tensor N X 6 X 7
+        self.dataset = channels

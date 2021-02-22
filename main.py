@@ -70,10 +70,23 @@ def main():
         ).to(device)
     elif args.model_type == "CNN":
         model = CNN(
-            dropout=args.dropout, batchnorm=args.batchnorm, activation=args.activation,
+            4,
+            dropout=args.dropout,
+            batchnorm=args.batchnorm,
+            activation=args.activation,
         ).to(device)
+    elif args.model_type == "SmallCNN":
+        model = CNN(
+            6,
+            dropout=args.dropout,
+            batchnorm=args.batchnorm,
+            activation=args.activation,
+        ).to(device)
+
     else:
-        raise NotImplementedError("Only MLP and CNN are accepted as model type")
+        raise NotImplementedError(
+            "Only MLP, CNN and SmallCNN are accepted as model type"
+        )
 
     # Change type of weights
     model = model.double()
