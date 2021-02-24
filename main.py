@@ -31,21 +31,23 @@ def main():
     # magic values from mean and std of the whole dataset
     # mean, std = get_mean_std(args.input_size)
 
-    # Initialize directories
-    save_path = "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-wd{7}".format(
-        args.model_type,
-        args.input_size[0] - 1 if len(args.input_size) == 1 else args.input_size,
-        args.batch_size,
-        args.layers,
-        args.hidden_dim,
-        args.activation,
-        init,
-        args.weight_decay,
-    )
-    os.makedirs(
-        save_path, exist_ok=True,
-    )
-    print("\nSave checkpoints in {0}\n".format(save_path))
+    if args.train:
+        # Initialize directories
+        save_path = "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-wd{7}_kernel{8}".format(
+            args.model_type,
+            args.input_size[0] - 1 if len(args.input_size) == 1 else args.input_size,
+            args.batch_size,
+            args.layers,
+            args.hidden_dim,
+            args.activation,
+            init,
+            args.weight_decay,
+            args.kernel_size,
+        )
+        os.makedirs(
+            save_path, exist_ok=True,
+        )
+        print("\nSaving checkpoints in {0}\n".format(save_path))
 
     # limit number of CPUs
     torch.set_num_threads(args.workers)
@@ -78,6 +80,7 @@ def main():
     elif args.model_type == "SmallCNN":
         model = CNN(
             6,
+            kernel_size=args.kernel_size,
             dropout=args.dropout,
             batchnorm=args.batchnorm,
             activation=args.activation,
@@ -90,6 +93,14 @@ def main():
 
     # Change type of weights
     model = model.double()
+
+    # define transform to apply
+    # normalize = Normalize(mean, std)
+    transform_list = [
+        torch.tensor,
+        # normalize,
+    ]
+    transform = transforms.Compose(transform_list)
 
     # save current training on wandb
     if args.save_wandb:
@@ -107,39 +118,31 @@ def main():
             opt, factor=0.5, verbose=True
         )
 
-    # define transform to apply
-    # normalize = Normalize(mean, std)
-    transform_list = [
-        torch.tensor,
-        # normalize,
-    ]
-    transform = transforms.Compose(transform_list)
-
-    # load training and validation dataset
-    train_loader, valid_loader = load_data(
-        args.data_dir,
-        args.input_name,
-        OUTPUT_NAME,
-        args.input_size,
-        args.batch_size,
-        args.val_batch_size,
-        transform=transform,
-        num_workers=args.workers,
-        model=args.model_type,
-    )
-
-    # initialize R2 score class
-    best_losses = np.infty
-    valid_r2 = R2Score()
-    train_r2 = R2Score()
-
-    # initialize list of losses
-    train_loss = []
-    val_loss = []
-    val_r2 = []
-    tr_r2 = []
-
     if args.train:
+        # load training and validation dataset
+        train_loader, valid_loader = load_data(
+            args.data_dir,
+            args.input_name,
+            OUTPUT_NAME,
+            args.input_size,
+            args.batch_size,
+            args.val_batch_size,
+            transform=transform,
+            num_workers=args.workers,
+            model=args.model_type,
+        )
+
+        # initialize R2 score class
+        best_losses = np.infty
+        valid_r2 = R2Score()
+        train_r2 = R2Score()
+
+        # initialize list of losses
+        train_loss = []
+        val_loss = []
+        val_r2 = []
+        tr_r2 = []
+
         # initialize start epoch
         start_epoch = 0
         # Resume training if checkpoint path is given

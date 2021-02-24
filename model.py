@@ -122,7 +122,12 @@ class MultiLayerPerceptron(nn.Module):
 
 class CNN(nn.Module):
     def __init__(
-        self, in_ch: int, dropout=False, batchnorm=False, activation="rrelu",
+        self,
+        in_ch: int,
+        kernel_size: int = None,
+        dropout: bool = False,
+        batchnorm: bool = False,
+        activation: str = "rrelu",
     ):
 
         super(CNN, self).__init__()
@@ -131,12 +136,21 @@ class CNN(nn.Module):
         self.batchnorm = batchnorm
         self.activation = self._get_activation_func(activation)
 
-        if in_ch == 4:
-            kernel_size = 28
-        else:
-            kernel_size = 14
+        if kernel_size is None:
+            if in_ch == 4:
+                kernel_size = 28
+            elif in_ch == 6:
+                kernel_size = 14
+            else:
+                raise NotImplementedError(
+                    "Model with {0} channel(s) not available.".format(in_ch)
+                )
 
-        self.conv1 = self._convlayer(in_ch, 128, kernel_size)
+        # self.conv1 = self._convlayer(in_ch, 128, kernel_size)
+        self.conv1 = nn.Sequential(
+            self._convlayer(in_ch, 128, kernel_size),
+            self._convlayer(128, 128, kernel_size + 1),
+        )
 
         self.fc1 = self._fclayer(128, 64)
         self.fc2 = self._fclayer(64, 32)

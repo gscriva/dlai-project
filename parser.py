@@ -97,10 +97,9 @@ def parser():
     )
     parser.add_argument(
         "--test_data_dir",
-        default="",
+        nargs="+",
         type=str,
-        metavar="PATH",
-        help="dataset directory used for testing",
+        help="list of datasets directory used for testing",
     )
     parser.add_argument(
         "--weights_path",
@@ -143,6 +142,13 @@ def parser():
         type=int,
         metavar="N",
         help="number of the hidden layers (default 3)",
+    )
+    parser.add_argument(
+        "--kernel_size",
+        default=None,
+        type=int,
+        metavar="N",
+        help="size of the kernel (default None)",
     )
     parser.add_argument(
         "--workers",
