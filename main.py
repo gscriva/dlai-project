@@ -9,9 +9,8 @@ import wandb
 
 # from tqdm import tqdm, trange
 
-from model import MultiLayerPerceptron, CNN
 from score import make_averager
-from utils import load_data, config_wandb  # get_mean_std, Normalize
+from utils import load_data, config_wandb, get_model  # get_mean_std, Normalize
 from init_parameters import freeze_param
 
 
@@ -57,40 +56,8 @@ def main():
     # check if GPU is available
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    # import model, set its parameter as double and move it to GPU (if available)
-    if args.model_type == "MLP":
-        model = MultiLayerPerceptron(
-            args.layers,
-            args.hidden_dim,
-            # MLP cannot train with multiple sizes
-            2 * (args.input_size[0] - 1),
-            dropout=args.dropout,
-            batchnorm=args.batchnorm,
-            activation=args.activation,
-            init=init,
-            weights_path=args.weights_path,
-        ).to(device)
-    elif args.model_type == "CNN":
-        model = CNN(
-            4,
-            dropout=args.dropout,
-            batchnorm=args.batchnorm,
-            activation=args.activation,
-        ).to(device)
-    elif args.model_type == "SmallCNN":
-        model = CNN(
-            6,
-            kernel_size=args.kernel_size,
-            dropout=args.dropout,
-            batchnorm=args.batchnorm,
-            activation=args.activation,
-        ).to(device)
-
-    else:
-        raise NotImplementedError(
-            "Only MLP, CNN and SmallCNN are accepted as model type"
-        )
-
+    # import model and move it to GPU (if available)
+    model = get_model(args, init=init).to(device)
     # Change type of weights
     model = model.double()
 

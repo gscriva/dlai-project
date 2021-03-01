@@ -14,6 +14,7 @@ class MultiLayerPerceptron(nn.Module):
         layers,
         hidden_dim,
         input_size,
+        fix_model=False,
         dropout=False,
         batchnorm=False,
         activation="rrelu",
@@ -30,14 +31,16 @@ class MultiLayerPerceptron(nn.Module):
         self.batchnorm = batchnorm
         self.activation = self._get_activation_func(activation)
 
-        # get proper architecture for hidden layers
-        hidden_dims = self._get_hidden_dims()
+        if fix_model:
+            # fix models use the same structure for all input size
+            sizes = [input_size] + [hidden_dim] * layers + [1]
+        else:
+            # get proper architecture for hidden layers
+            hidden_dims = self._get_hidden_dims()
 
-        # add input and output dimension
-        sizes = [input_size] + hidden_dims + [1]
+            # add input and output dimension
+            sizes = [input_size] + hidden_dims + [1]
 
-        # old model
-        # sizes = [input_size] + [hidden_dim] * layers + [1]
         print("structure {0}".format(sizes))
 
         if init:
@@ -146,11 +149,11 @@ class CNN(nn.Module):
                     "Model with {0} channel(s) not available.".format(in_ch)
                 )
 
-        # self.conv1 = self._convlayer(in_ch, 128, kernel_size)
-        self.conv1 = nn.Sequential(
-            self._convlayer(in_ch, 128, kernel_size),
-            self._convlayer(128, 128, kernel_size + 1),
-        )
+        self.conv1 = self._convlayer(in_ch, 128, kernel_size)
+        # self.conv1 = nn.Sequential(
+        #     self._convlayer(in_ch, 128, kernel_size),
+        #     self._convlayer(128, 128, kernel_size + 1),
+        # )
 
         self.fc1 = self._fclayer(128, 64)
         self.fc2 = self._fclayer(64, 32)

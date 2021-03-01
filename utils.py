@@ -11,6 +11,7 @@ from torchvision import transforms
 import matplotlib.pyplot as plt
 import wandb
 
+from model import MultiLayerPerceptron, CNN
 from data_loader import Speckle
 
 
@@ -287,6 +288,66 @@ def get_mean_std(input_size: int) -> tuple:
     else:
         raise NotImplementedError("No mean/std for this dataset")
     return (mean, std)
+
+
+def get_model(args: Any, init: bool = False) -> nn.Module:
+    """Returns the correct required model.
+
+    Args:
+        args (Any): Args in the parser.
+        init (bool, optional): Set True if you want initialize weights. Defaults to False.
+
+    Returns:
+        nn.Module: Requested model.
+    """
+    if args.model_type == "MLP":
+        model = MultiLayerPerceptron(
+            args.layers,
+            args.hidden_dim,
+            # MLP cannot train with multiple sizes
+            2 * (args.input_size[0] - 1),
+            fix_model=False,
+            dropout=args.dropout,
+            batchnorm=args.batchnorm,
+            activation=args.activation,
+            init=init,
+            weights_path=args.weights_path,
+        )
+    if args.model_type == "FixMLP":
+        fix_size = 112
+        model = MultiLayerPerceptron(
+            args.layers,
+            args.hidden_dim,
+            # MLP cannot train with multiple sizes
+            fix_size,
+            fix_model=True,
+            dropout=args.dropout,
+            batchnorm=args.batchnorm,
+            activation=args.activation,
+            init=init,
+            weights_path=args.weights_path,
+        )
+    elif args.model_type == "CNN":
+        model = CNN(
+            4,
+            dropout=args.dropout,
+            batchnorm=args.batchnorm,
+            activation=args.activation,
+        )
+    elif args.model_type == "SmallCNN":
+        model = CNN(
+            6,
+            kernel_size=args.kernel_size,
+            dropout=args.dropout,
+            batchnorm=args.batchnorm,
+            activation=args.activation,
+        )
+    else:
+        model_list = "MLP, FixMLP, CNN and SmallCNN"
+        raise NotImplementedError(
+            "Only {0} are accepted as model type".format(model_list)
+        )
+    return model
 
 
 # class Normalize(nn.Module):
