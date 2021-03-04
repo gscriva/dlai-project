@@ -324,7 +324,7 @@ def get_model(args: Any, init: bool = False) -> nn.Module:
             dropout=args.dropout,
             batchnorm=args.batchnorm,
             activation=args.activation,
-            init=init,
+            init=False,
             weights_path=args.weights_path,
         )
     elif args.model_type == "CNN":

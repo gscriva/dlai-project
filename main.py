@@ -11,13 +11,14 @@ import wandb
 
 from score import make_averager
 from utils import load_data, config_wandb, get_model  # get_mean_std, Normalize
-from init_parameters import freeze_param
+from init_parameters import freeze_param, init_weights
 
 
 def main():
     # Load parser
     pars = parser()
     args = pars.parse_args()
+
     print("\n\nArguments:\n{0}\n".format(args))
 
     # Fixed parameters
@@ -58,8 +59,18 @@ def main():
 
     # import model and move it to GPU (if available)
     model = get_model(args, init=init).to(device)
+
     # Change type of weights
     model = model.double()
+
+    # initialize weights as zeros
+    if args.weights_path == "zeros":
+        model.apply(init_weights)
+        freeze_layer = False
+
+    # freeze all weights except the num_layer layer
+    if args.nofreeze_layer is not None:
+        model = freeze_param(model, num_layer=args.nofreeze_layer)
 
     # define transform to apply
     # normalize = Normalize(mean, std)
@@ -76,13 +87,15 @@ def main():
     # import loss and optimizer
     criterion = torch.nn.MSELoss()
     opt = torch.optim.Adam(
-        model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay
+        filter(lambda p: p.requires_grad, model.parameters()),
+        lr=args.learning_rate,
+        weight_decay=args.weight_decay,
     )
 
     # import scheduler to reduce lr dinamically
     if args.scheduler:
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            opt, factor=0.5, verbose=True
+            opt, factor=0.5, patience=30, verbose=True
         )
 
     if args.train:
@@ -148,10 +161,6 @@ def main():
             train_r2.reset()
 
             model.train()
-
-            # freeze all weights except the first layer
-            if init:
-                model = freeze_param(model)
 
             # for data, target in tqdm_iterator:
             for data, target in train_loader:
@@ -244,8 +253,8 @@ def main():
                 best_losses = valid_loss
                 torch.save(checkpoint_dict, save_path + "/best-model.pth")
 
-            # save model every epoch
-            if epoch % 1 == 0:
+            # save model every 50 epochs
+            if epoch % 50 == 0:
                 torch.save(
                     checkpoint_dict, save_path + "/model-epoch-{0}.pth".format(epoch,),
                 )

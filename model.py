@@ -44,12 +44,15 @@ class MultiLayerPerceptron(nn.Module):
         print("structure {0}".format(sizes))
 
         if init:
-            parameter = load_param(weights_path, input_size)
-            print(
-                "\nModel parameters initialized using weights in {0}".format(
-                    weights_path
+            try:
+                parameter = load_param(weights_path, input_size, method=None)
+                print(
+                    "\nModel parameters initialized using weights in {0}".format(
+                        weights_path
+                    )
                 )
-            )
+            except RuntimeWarning:
+                print("weight_path={0}, maybe not a path".format(weights_path))
 
         fc_layers = OrderedDict()
         for i in range(len(sizes) - 1):
@@ -96,7 +99,7 @@ class MultiLayerPerceptron(nn.Module):
         hidden_dims = (self.hidden_dim / hidden_dims).astype(int).tolist()
         return hidden_dims
 
-    def _get_activation_func(self, activation: str) -> nn.modules.activation.ReLU:
+    def _get_activation_func(self, activation: str) -> nn.modules.activation:
         """Returns the requested activation function.
 
         Args:

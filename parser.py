@@ -130,6 +130,13 @@ def parser():
         required=True,
     )
     parser.add_argument(
+        "--nofreeze_layer",
+        nargs="+",
+        type=str,
+        help="list of layer to not freeze",
+        default=None,
+    )
+    parser.add_argument(
         "--hidden_dim",
         default=128,
         type=int,

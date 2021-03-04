@@ -1,7 +1,8 @@
 from collections import OrderedDict
-from typing import Callable
+from typing import Callable, Any
 
 import torch
+import torch.nn as nn
 import numpy as np
 from scipy import interpolate
 
@@ -14,23 +15,13 @@ def load_param(path: str, x_newsize: int, method: str = "interp") -> OrderedDict
         raise FileNotFoundError("File {0} not found".format(path))
     trained_param = checkpoint["model_state_dict"]
 
-    weight0 = trained_param["layers.linear0.weight"]
+    if method == "interp":
+        weight0 = trained_param["layers.linear0.weight"]
 
-    # layer 0 must be resized
-    init_method = get_method(method,)
-    trained_param["layers.linear0.weight"] = init_method(weight0, x_newsize)
+        # layer 0 must be resized
+        trained_param["layers.linear0.weight"] = inter_param(weight0, x_newsize)
 
     return trained_param
-
-
-def get_method(method: str) -> Callable:
-    if method == "interp":
-        init_method = inter_param
-    else:
-        raise NotImplementedError(
-            "Requested method {0} is not implemented".format(method)
-        )
-    return init_method
 
 
 def inter_param(weight0: torch.Tensor, x_newsize: int) -> torch.Tensor:
@@ -46,11 +37,19 @@ def inter_param(weight0: torch.Tensor, x_newsize: int) -> torch.Tensor:
     return torch.Tensor(weight)
 
 
-def freeze_param(model):
+def freeze_param(model: nn.Module, num_layer: list = None) -> None:
     for name, param in model.named_parameters():
         # first layer must have requires_grad
-        if name.split(".")[1][-1] == "0":
+        num_name = name.split(".")[1][-1]
+        if num_name in num_layer:
+            print(name, "has requires_grad")
             continue
         param.requires_grad = False
 
     return model
+
+
+def init_weights(m: nn.Module) -> None:
+    if type(m) == nn.Linear:
+        torch.nn.init.zeros_(m.weight)
+        m.bias.data.fill_(0.01)
