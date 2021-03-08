@@ -37,7 +37,7 @@ class Speckle(Dataset):
         data = np.load(data_file)
         size_ds = len(data[output_name])
         # len single data
-        len_data = data[data_name].shape[0]
+        len_data = data[data_name].shape[1]
 
         # set seed as input
         np.random.seed(seed)
@@ -90,16 +90,20 @@ class Speckle(Dataset):
         """
         if self.model == "MLP":
             # only input_size coef are non zeros
-            self.dataset = data[data_name][idx, 1:self.input_size]
+            self.dataset = data[data_name][idx, 1 : self.input_size]
         elif self.model == "CNN":
-            self.dataset = data[data_name][idx, :self.input_size]
+            self.dataset = data[data_name][idx, : self.input_size]
             self._get_4channels()
         elif self.model == "SmallCNN":
-            self.dataset = data[data_name][idx, :self.input_size]
+            self.dataset = data[data_name][idx, : self.input_size]
             self._get_channels()
         elif self.model == "FixMLP":
-            self.dataset = data[data_name][idx, 1:self.input_size]
-            self._reshape_data() 
+            self.dataset = data[data_name][idx, 1 : self.input_size]
+            self._reshape_data()
+        elif self.model == "FixCNN":
+            self.dataset = data[data_name][idx, 1 : self.input_size]
+            self._reshape_data()
+            self.dataset = np.reshape(self.dataset, (-1, 1, 56))
         else:
             raise NotImplementedError("Only MLP and CNN are accepted")
 
@@ -110,11 +114,14 @@ class Speckle(Dataset):
     def _get_real_ds(self) -> None:
         """Divides real and imag part of the input data.
         """
-        if self.model == "FixMLP": 
+        if self.model == "FixMLP" or self.model == "FixCNN":
             real_ds = np.real(self.dataset)
             imag_ds = np.imag(self.dataset)
-            
-            shape = (self.__len__(), 112)
+
+            if self.model == "FixMLP":
+                shape = (self.__len__(), 112)
+            else:
+                shape = (self.__len__(), 1, 112)
             data = np.zeros(shape)
 
             data[..., ::2] = real_ds
@@ -125,17 +132,17 @@ class Speckle(Dataset):
             real_ds = np.real(self.dataset)
             imag_ds = np.imag(self.dataset)
             self.dataset = np.append(real_ds, imag_ds, axis=-1)
-    
+
     def _reshape_data(self) -> None:
         """Reshape input data to fit in a fix-size array. 
         """
         shape = (*self.dataset.shape[:-1], 56)
         data = np.zeros(shape, dtype=np.complex128)
-        
+
         if self.input_size == 8:
             data[..., 7::8] = self.dataset
         elif self.input_size == 15:
-            data[..., 3::4] = self.dataset          
+            data[..., 3::4] = self.dataset
         elif self.input_size == 29:
             data[..., 1::2] = self.dataset
         elif self.input_size == 57:
@@ -145,7 +152,6 @@ class Speckle(Dataset):
                 "Size {0} not implemented".format(self.input_size)
             )
         self.dataset = data
-
 
     def _get_4channels(self) -> None:
         """This method fill 4 channels using available data.

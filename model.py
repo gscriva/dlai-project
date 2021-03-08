@@ -41,7 +41,7 @@ class MultiLayerPerceptron(nn.Module):
             # add input and output dimension
             sizes = [input_size] + hidden_dims + [1]
 
-        print("structure {0}".format(sizes))
+        print("structure {0}\n".format(sizes))
 
         if init:
             try:
@@ -216,7 +216,112 @@ class CNN(nn.Module):
 
         return nn.Sequential(layer)
 
-    def _get_activation_func(self, activation: str) -> nn.modules.activation.ReLU:
+    def _get_activation_func(self, activation: str) -> nn.modules.activation:
+        """Returns the requested activation function.
+
+        Args:
+            activation (str): Name of the activation function.
+
+        Returns:
+            nn.modules.activation.ReLU: The chosen activationfunction
+        """
+        if activation == "relu":
+            function = nn.ReLU()
+        elif activation == "prelu":
+            function = nn.PReLU()
+        elif activation == "rrelu":
+            function = nn.RReLU()
+        elif activation == "leakyrelu":
+            function = nn.LeakyReLU()
+        elif activation == "gelu":
+            function = nn.GELU()
+        else:
+            raise NotImplementedError("Activation function not implemented")
+        return function
+
+
+class FixCNN(nn.Module):
+    def __init__(
+        self,
+        in_ch: int,
+        kernel_size: int = None,
+        dropout: bool = False,
+        batchnorm: bool = False,
+        activation: str = "rrelu",
+    ):
+
+        super(FixCNN, self).__init__()
+
+        self.dropout = dropout
+        self.batchnorm = batchnorm
+        self.activation = self._get_activation_func(activation)
+
+        padding = (kernel_size - 1) / 2
+
+        self.conv1 = self._convlayer(
+            in_ch, 2, kernel_size, padding=int(padding), padding_mode="circular"
+        )
+
+        self.fc1 = self._fclayer(112 * 2, 128)
+        self.fc2 = self._fclayer(128, 64)
+        self.fc3 = self._fclayer(64, 32)
+
+        self.fc4 = nn.Sequential(nn.Linear(32, 1))
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = x.view(-1, 112 * 2)
+        x = self.fc1(x)
+        x = self.fc2(x)
+        x = self.fc3(x)
+        x = self.fc4(x)
+        return x
+
+    def _convlayer(
+        self,
+        in_ch: int,
+        out_ch: int,
+        kernel_size: int,
+        padding: int = 0,
+        stride: int = 1,
+        padding_mode="zeros",
+    ) -> nn.modules.container.Sequential:
+        layer = OrderedDict()
+
+        layer["conv"] = nn.Conv1d(
+            in_ch,
+            out_ch,
+            kernel_size,
+            padding=padding,
+            padding_mode=padding_mode,
+            stride=stride,
+        )
+        if self.batchnorm:
+            layer["batch"] = nn.BatchNorm1d(out_ch)
+
+        if self.dropout:
+            layer["dropout"] = nn.Dropout()
+
+        layer["activation"] = self.activation
+
+        return nn.Sequential(layer)
+
+    def _fclayer(self, in_ch, out_ch) -> nn.modules.container.Sequential:
+        layer = OrderedDict()
+
+        layer["linear"] = nn.Linear(in_ch, out_ch)
+
+        if self.batchnorm:
+            layer["batch"] = nn.BatchNorm1d(out_ch)
+
+        if self.dropout:
+            layer["dropout"] = nn.Dropout()
+
+        layer["activation"] = self.activation
+
+        return nn.Sequential(layer)
+
+    def _get_activation_func(self, activation: str) -> nn.modules.activation:
         """Returns the requested activation function.
 
         Args:

@@ -11,7 +11,7 @@ from torchvision import transforms
 import matplotlib.pyplot as plt
 import wandb
 
-from model import MultiLayerPerceptron, CNN
+from model import MultiLayerPerceptron, CNN, FixCNN
 from data_loader import Speckle
 
 
@@ -327,6 +327,14 @@ def get_model(args: Any, init: bool = False) -> nn.Module:
             init=False,
             weights_path=args.weights_path,
         )
+    elif args.model_type == "FixCNN":
+        model = FixCNN(
+            1,
+            kernel_size=args.kernel_size,
+            dropout=args.dropout,
+            batchnorm=args.batchnorm,
+            activation=args.activation,
+        )
     elif args.model_type == "CNN":
         model = CNN(
             4,
@@ -343,7 +351,7 @@ def get_model(args: Any, init: bool = False) -> nn.Module:
             activation=args.activation,
         )
     else:
-        model_list = "MLP, FixMLP, CNN and SmallCNN"
+        model_list = "MLP, FixMLP, CNN, FixCNN and SmallCNN"
         raise NotImplementedError(
             "Only {0} are accepted as model type".format(model_list)
         )
