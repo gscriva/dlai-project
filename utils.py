@@ -314,12 +314,12 @@ def get_model(args: Any, init: bool = False) -> nn.Module:
             weights_path=args.weights_path,
         )
     if args.model_type == "FixMLP":
-        fix_size = 112
+        input_size = 112
         model = MultiLayerPerceptron(
             args.layers,
             args.hidden_dim,
             # MLP cannot train with multiple sizes
-            fix_size,
+            input_size,
             fix_model=True,
             dropout=args.dropout,
             batchnorm=args.batchnorm,

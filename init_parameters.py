@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from typing import Callable, Any
 
 import torch
 import torch.nn as nn
@@ -41,8 +40,10 @@ def freeze_param(model: nn.Module, num_layer: list = None) -> None:
     for name, param in model.named_parameters():
         # first layer must have requires_grad
         num_name = name.split(".")[1][-1]
+
+        print("\nLayer(s) {0} has (have) requires_grad=True\n".format(num_layer))
+
         if num_name in num_layer:
-            print(name, "has requires_grad")
             continue
         param.requires_grad = False
 

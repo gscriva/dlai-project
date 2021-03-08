@@ -14,6 +14,11 @@ from utils import load_data, config_wandb, get_model  # get_mean_std, Normalize
 from init_parameters import freeze_param, init_weights
 
 
+# Fixed parameters
+OUTPUT_NAME = "evalues"
+TEST_BATCH_SIZE = 500
+
+
 def main():
     # Load parser
     pars = parser()
@@ -21,9 +26,6 @@ def main():
 
     print("\n\nArguments:\n{0}\n".format(args))
 
-    # Fixed parameters
-    OUTPUT_NAME = "evalues"
-    TEST_BATCH_SIZE = 500
     # to be pass to the model
     init = args.weights_path is not None
     print("\nNon-parametric args:\ntest_batch_size: {0}".format(TEST_BATCH_SIZE))
@@ -33,7 +35,7 @@ def main():
 
     if args.train:
         # Initialize directories
-        save_path = "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-wd{7}_kernel{8}".format(
+        save_path = "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-nofreeze{7}-wd{8}-kernel{9}".format(
             args.model_type,
             args.input_size[0] - 1 if len(args.input_size) == 1 else args.input_size,
             args.batch_size,
@@ -41,6 +43,7 @@ def main():
             args.hidden_dim,
             args.activation,
             init,
+            args.nofreeze_layer,
             args.weight_decay,
             args.kernel_size,
         )
@@ -66,7 +69,6 @@ def main():
     # initialize weights as zeros
     if args.weights_path == "zeros":
         model.apply(init_weights)
-        freeze_layer = False
 
     # freeze all weights except the num_layer layer
     if args.nofreeze_layer is not None:
@@ -95,7 +97,7 @@ def main():
     # import scheduler to reduce lr dinamically
     if args.scheduler:
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            opt, factor=0.5, patience=30, verbose=True
+            opt, factor=0.95, patience=10, verbose=True
         )
 
     if args.train:
@@ -251,12 +253,12 @@ def main():
             # Save checkpoint every epoch and when a better model is produced
             if valid_loss < best_losses:
                 best_losses = valid_loss
-                torch.save(checkpoint_dict, save_path + "/best-model.pth")
+                torch.save(checkpoint_dict, save_path + "/best-model.tar")
 
             # save model every 50 epochs
             if epoch % 50 == 0:
                 torch.save(
-                    checkpoint_dict, save_path + "/model-epoch-{0}.pth".format(epoch,),
+                    checkpoint_dict, save_path + "/model-epoch-{0}.tar".format(epoch,),
                 )
 
         if args.save_wandb:
