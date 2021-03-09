@@ -6,7 +6,17 @@ import numpy as np
 from scipy import interpolate
 
 
-def load_param(path: str, x_newsize: int, method: str = "interp") -> OrderedDict:
+def load_param(path: str, x_newsize: int = None, method: str = "interp") -> OrderedDict:
+    """Load param from path and interpole them if requested.
+
+    Args:
+        path (str): Path to the model checkpoint.
+        x_newsize (int): Size of the first layer.
+        method (str, optional): Method to get the first layer weights. Defaults to "interp".
+
+    Returns:
+        OrderedDict: Dictionary with the pretrained model weights.
+    """
     # load parameters from pretrained model
     try:
         checkpoint = torch.load(path)
@@ -36,7 +46,16 @@ def inter_param(weight0: torch.Tensor, x_newsize: int) -> torch.Tensor:
     return torch.Tensor(weight)
 
 
-def freeze_param(model: nn.Module, num_layer: list = None) -> None:
+def freeze_param(model: nn.Module, num_layer: list = None) -> nn.Module:
+    """Freeze all params except those in num_layer list.
+
+    Args:
+        model (nn.Module): Model to be trained.
+        num_layer (list, optional): List of string with the layer numbers. Defaults to None.
+
+    Returns:
+        nn.Module: Model with some layers freezed.
+    """
     for name, param in model.named_parameters():
         # first layer must have requires_grad
         num_name = name.split(".")[1][-1]
@@ -51,6 +70,11 @@ def freeze_param(model: nn.Module, num_layer: list = None) -> None:
 
 
 def init_weights(m: nn.Module) -> None:
+    """Initializes the model weights with zeros.
+
+    Args:
+        m (nn.Module): Model to be trained.
+    """
     if type(m) == nn.Linear:
         torch.nn.init.zeros_(m.weight)
         m.bias.data.fill_(0.01)

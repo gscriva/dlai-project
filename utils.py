@@ -2,6 +2,7 @@ import os
 from multiprocessing import Pool, cpu_count
 from math import floor
 from typing import Any, Callable, List
+from collections import OrderedDict
 
 import numpy as np
 import torch
@@ -13,6 +14,7 @@ import wandb
 
 from model import MultiLayerPerceptron, CNN, FixCNN
 from data_loader import Speckle
+from init_parameters import load_param
 
 
 def load_data(
@@ -319,6 +321,7 @@ def get_model(args: Any, init: bool = False) -> nn.Module:
             args.layers,
             args.hidden_dim,
             # MLP cannot train with multiple sizes
+            # so input size is constant
             input_size,
             fix_model=True,
             dropout=args.dropout,
@@ -335,6 +338,10 @@ def get_model(args: Any, init: bool = False) -> nn.Module:
             batchnorm=args.batchnorm,
             activation=args.activation,
         )
+        # if pretrained weights are passed, load the model
+        if args.weights_path is not None:
+            weights = load_param(args.weights_path, method=None)
+            model.load_state_dict(weights)
     elif args.model_type == "CNN":
         model = CNN(
             4,
