@@ -258,7 +258,7 @@ class FixCNN(nn.Module):
 
         padding = (kernel_size - 1) / 2
 
-        self.conv1 = self._convlayer(
+        self.conv0 = self._convlayer(
             in_ch, 2, kernel_size, padding=int(padding), padding_mode="circular"
         )
 
@@ -269,7 +269,7 @@ class FixCNN(nn.Module):
         self.fc4 = nn.Sequential(nn.Linear(32, 1))
 
     def forward(self, x):
-        x = self.conv1(x)
+        x = self.conv0(x)
         x = x.view(-1, 112 * 2)
         x = self.fc1(x)
         x = self.fc2(x)
