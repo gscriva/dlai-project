@@ -1,6 +1,8 @@
 from collections import OrderedDict
+from typing import List
 
 import numpy as np
+import torch
 import torch.nn as nn
 
 from init_parameters import load_param
@@ -343,6 +345,150 @@ class FixCNN(nn.Module):
         else:
             raise NotImplementedError("Activation function not implemented")
         return function
+
+
+class GoogLeNet(nn.Module):
+    def __init__(
+        self,
+        in_ch: int,
+        kernel_size: int = None,
+        dropout: bool = False,
+        batchnorm: bool = False,
+        activation: str = "rrelu",
+    ):
+
+        super(GoogLeNet, self).__init__()
+
+        self.dropout = dropout
+        self.batchnorm = batchnorm
+        self.activation = self._get_activation_func(activation)
+
+        self.incept0 = self._incept_block(kernel_size, in_ch, 16, 16, 32, 16, 8, 8)
+        self.maxpool0 = nn.MaxPool1d(3, stride=2, ceil_mode=True)  # do not fit
+
+        self.fc1 = self._fclayer(64 * 56, 512)
+        self.fc2 = self._fclayer(512, 256)
+        self.fc3 = self._fclayer(256, 32)
+
+        self.fc4 = nn.Sequential(nn.Linear(32, 1))
+
+    def forward(self, x):
+        # N x 1 x 112
+        x = self._incept0aux(x)
+        # N x 64 x 112
+        x = self.maxpool0(x)
+        # N x 64 x 64
+        x = x.view(-1, 64 * 56)
+        x = self.fc1(x)
+        x = self.fc2(x)
+        x = self.fc3(x)
+        x = self.fc4(x)
+        return x
+
+    def _incept0aux(self, x) -> torch.Tensor:
+        branch0 = self.incept0["branch0"](x)
+        branch1 = self.incept0["branch1"](x)
+        branch2 = self.incept0["branch2"](x)
+        branch3 = self.incept0["branch3"](x)
+
+        outputs = [branch0, branch1, branch2, branch3]
+        return torch.cat(outputs, 1)
+
+    def _fclayer(self, in_ch, out_ch) -> nn.modules.container.Sequential:
+        layer = OrderedDict()
+
+        layer["linear"] = nn.Linear(in_ch, out_ch)
+
+        if self.batchnorm:
+            layer["batch"] = nn.BatchNorm1d(out_ch)
+        if self.dropout:
+            layer["dropout"] = nn.Dropout()
+
+        layer["activation"] = self.activation
+        return nn.Sequential(layer)
+
+    def _convlayer(
+        self,
+        in_ch: int,
+        out_ch: int,
+        kernel_size: int = 3,
+        padding: int = 0,
+        stride: int = 1,
+        padding_mode="zeros",
+    ) -> nn.modules.container.Sequential:
+        layer = OrderedDict()
+
+        layer["conv"] = nn.Conv1d(
+            in_ch,
+            out_ch,
+            kernel_size,
+            padding=padding,
+            padding_mode=padding_mode,
+            stride=stride,
+        )
+        if self.batchnorm:
+            layer["batch"] = nn.BatchNorm1d(out_ch)
+
+        if self.dropout:
+            layer["dropout"] = nn.Dropout()
+
+        layer["activation"] = self.activation
+
+        return nn.Sequential(layer)
+
+    def _get_activation_func(self, activation: str) -> nn.modules.activation:
+        """Returns the requested activation function.
+
+        Args:
+            activation (str): Name of the activation function.
+
+        Returns:
+            nn.modules.activation.ReLU: The chosen activationfunction
+        """
+        if activation == "relu":
+            function = nn.ReLU()
+        elif activation == "prelu":
+            function = nn.PReLU()
+        elif activation == "rrelu":
+            function = nn.RReLU()
+        elif activation == "leakyrelu":
+            function = nn.LeakyReLU()
+        elif activation == "gelu":
+            function = nn.GELU()
+        else:
+            raise NotImplementedError("Activation function not implemented")
+        return function
+
+    def _incept_block(
+        self,
+        max_kernel_size: int,
+        in_ch: int,
+        ch1x1: int,
+        ch3x3red: int,
+        ch3x3: int,
+        ch5x5red: int,
+        ch5x5: int,
+        pool_proj: int,
+    ) -> OrderedDict:
+        incept = OrderedDict()
+
+        incept["branch0"] = self._convlayer(in_ch, ch1x1, kernel_size=1)
+
+        incept["branch1"] = nn.Sequential(
+            self._convlayer(in_ch, ch3x3red, kernel_size=1),
+            self._convlayer(ch3x3red, ch3x3, kernel_size=3, padding=1),
+        )
+
+        incept["branch2"] = nn.Sequential(
+            self._convlayer(in_ch, ch5x5red, kernel_size=1),
+            self._convlayer(ch5x5red, ch5x5, kernel_size=5, padding=2),
+        )
+
+        incept["branch3"] = nn.Sequential(
+            nn.MaxPool1d(kernel_size=3, stride=1, padding=1, ceil_mode=True),
+            self._convlayer(in_ch, pool_proj, kernel_size=1),
+        )
+        return incept
 
 
 class OldCNN(nn.Module):

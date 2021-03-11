@@ -12,7 +12,7 @@ from torchvision import transforms
 import matplotlib.pyplot as plt
 import wandb
 
-from model import MultiLayerPerceptron, CNN, FixCNN
+from model import MultiLayerPerceptron, CNN, FixCNN, GoogLeNet
 from data_loader import Speckle
 from init_parameters import load_param
 
@@ -357,8 +357,16 @@ def get_model(args: Any, init: bool = False) -> nn.Module:
             batchnorm=args.batchnorm,
             activation=args.activation,
         )
+    elif args.model_type == "GoogLeNet":
+        model = GoogLeNet(
+            1,
+            # kernel_size=args.kernel_size,
+            dropout=args.dropout,
+            batchnorm=args.batchnorm,
+            activation=args.activation,
+        )
     else:
-        model_list = "MLP, FixMLP, CNN, FixCNN and SmallCNN"
+        model_list = "MLP, FixMLP, CNN, FixCNN, GoogLeNet and SmallCNN"
         raise NotImplementedError(
             "Only {0} are accepted as model type".format(model_list)
         )

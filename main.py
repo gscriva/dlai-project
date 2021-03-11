@@ -64,7 +64,8 @@ def main():
     model = get_model(args, init=init).to(device)
 
     # Change type of weights
-    model = model.double()
+    if args.model_type != "GoogLeNet":
+        model = model.double()
 
     # initialize weights as zeros
     if args.weights_path == "zeros":
@@ -167,6 +168,8 @@ def main():
             # for data, target in tqdm_iterator:
             for data, target in train_loader:
                 data, target = data.to(device), target.to(device)
+                if args.model_type == "GoogLeNet":
+                    data, target = data.float(), target.float()
 
                 pred = model(data)
                 # pred has dim (batch_size, 1), target (batch_size)
@@ -199,6 +202,8 @@ def main():
             with torch.no_grad():
                 for data, target in valid_loader:
                     data, target = data.to(device), target.to(device)
+                    if args.model_type == "GoogLeNet":
+                        data, target = data.float(), target.float()
 
                     pred = model(data)
 
@@ -295,6 +300,8 @@ def main():
 
         with torch.no_grad():
             for data, target in test_loader:
+                if args.model_type == "GoogLeNet":
+                    data = data.float()
 
                 pred = model(data)
 

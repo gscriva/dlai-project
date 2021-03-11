@@ -100,7 +100,7 @@ class Speckle(Dataset):
         elif self.model == "FixMLP":
             self.dataset = data[data_name][idx, 1 : self.input_size]
             self._reshape_data()
-        elif self.model == "FixCNN":
+        elif self.model == "FixCNN" or self.model == "GoogLeNet":
             self.dataset = data[data_name][idx, 1 : self.input_size]
             self._reshape_data()
             self.dataset = np.reshape(self.dataset, (-1, 1, 56))
