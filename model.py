@@ -364,13 +364,14 @@ class GoogLeNet(nn.Module):
         self.activation = self._get_activation_func(activation)
 
         self.incept0 = self._incept_block(kernel_size, in_ch, 16, 16, 32, 16, 8, 8)
-        self.maxpool0 = nn.MaxPool1d(3, stride=2, ceil_mode=True)  # do not fit
+        self.maxpool0 = nn.MaxPool1d(3, stride=2, ceil_mode=True)
+        self.incept1 = self._incept_block(kernel_size, 64, 16, 16, 32, 16, 8, 8)
 
-        self.fc1 = self._fclayer(64 * 56, 512)
-        self.fc2 = self._fclayer(512, 256)
-        self.fc3 = self._fclayer(256, 32)
+        self.fc2 = self._fclayer(64 * 56, 512)
+        self.fc3 = self._fclayer(512, 256)
+        self.fc4 = self._fclayer(256, 32)
 
-        self.fc4 = nn.Sequential(nn.Linear(32, 1))
+        self.fc5 = nn.Sequential(nn.Linear(32, 1))
 
     def forward(self, x):
         # N x 1 x 112
@@ -378,11 +379,12 @@ class GoogLeNet(nn.Module):
         # N x 64 x 112
         x = self.maxpool0(x)
         # N x 64 x 64
+        x = self._incept1aux(x)
         x = x.view(-1, 64 * 56)
-        x = self.fc1(x)
         x = self.fc2(x)
         x = self.fc3(x)
         x = self.fc4(x)
+        x = self.fc5(x)
         return x
 
     def _incept0aux(self, x) -> torch.Tensor:
@@ -390,6 +392,15 @@ class GoogLeNet(nn.Module):
         branch1 = self.incept0["branch1"](x)
         branch2 = self.incept0["branch2"](x)
         branch3 = self.incept0["branch3"](x)
+
+        outputs = [branch0, branch1, branch2, branch3]
+        return torch.cat(outputs, 1)
+
+    def _incept1aux(self, x) -> torch.Tensor:
+        branch0 = self.incept1["branch0"](x)
+        branch1 = self.incept1["branch1"](x)
+        branch2 = self.incept1["branch2"](x)
+        branch3 = self.incept1["branch3"](x)
 
         outputs = [branch0, branch1, branch2, branch3]
         return torch.cat(outputs, 1)
@@ -493,7 +504,7 @@ class GoogLeNet(nn.Module):
 
 class OldCNN(nn.Module):
     def __init__(self):
-        super(CNN, self).__init__()
+        super(OldCNN, self).__init__()
 
         self.conv1 = self.convlayer(1, 16, 3, padding=1)
         self.conv2 = self.convlayer(16, 32, 3, padding=1)
