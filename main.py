@@ -10,7 +10,15 @@ import wandb
 # from tqdm import tqdm, trange
 
 from score import make_averager
-from utils import load_data, config_wandb, get_model  # get_mean_std, Normalize
+from utils import (
+    load_data,
+    config_wandb,
+    get_model,
+    get_mean_std,
+    get_min_max,
+    Normalize,
+    Standardize,
+)
 from init_parameters import freeze_param, init_weights
 
 
@@ -30,12 +38,9 @@ def main():
     init = args.weights_path is not None
     print("\nNon-parametric args:\ntest_batch_size: {0}".format(TEST_BATCH_SIZE))
 
-    # magic values from mean and std of the whole dataset
-    # mean, std = get_mean_std(args.input_size)
-
     if args.train:
         # Initialize directories
-        save_path = "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-nofreeze{7}-wd{8}-kernel{9}".format(
+        save_path = "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-nofreeze{7}-wd{8}-kernel{9}-norm{10}-stand{11}".format(
             args.model_type,
             args.input_size[0] - 1 if len(args.input_size) == 1 else args.input_size,
             args.batch_size,
@@ -46,6 +51,8 @@ def main():
             args.nofreeze_layer,
             args.weight_decay,
             args.kernel_size,
+            args.normalize,
+            args.standardize,
         )
         os.makedirs(
             save_path, exist_ok=True,
@@ -55,7 +62,7 @@ def main():
     # limit number of CPUs
     torch.set_num_threads(args.workers)
     # And set inter-parallel processes
-    torch.set_num_interop_threads(1)
+    # torch.set_num_interop_threads(1)
 
     # check if GPU is available
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -75,13 +82,22 @@ def main():
     if args.nofreeze_layer is not None:
         model = freeze_param(model, num_layer=args.nofreeze_layer)
 
-    # define transform to apply
-    # normalize = Normalize(mean, std)
-    transform_list = [
-        torch.tensor,
-        # normalize,
-    ]
-    transform = transforms.Compose(transform_list)
+    # define transform to apply to each dataset
+    transform = []
+    for idx, _ in enumerate(args.input_size):
+        transform_list = [
+            torch.tensor,
+        ]
+        print(idx, args.input_size)
+        if args.normalize:
+            min_val, max_val = get_min_max(args, idx)
+            transform_list.append(Normalize(min_val, max_val))
+        if args.standardize:
+            mean, std = get_mean_std(args, idx)
+            transform_list.append(
+                Standardize(mean, std, args.normalize, min_val=min_val, max_val=max_val)
+            )
+        transform.append(transforms.Compose(transform_list))
 
     # save current training on wandb
     if args.save_wandb:

@@ -1,14 +1,13 @@
 import os
 from multiprocessing import Pool, cpu_count
 from math import floor
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Union
 from collections import OrderedDict
 
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import ConcatDataset
-from torchvision import transforms
 import matplotlib.pyplot as plt
 import wandb
 
@@ -24,7 +23,7 @@ def load_data(
     input_size: List[int],
     batch_size: int,
     val_batch_size: int,
-    transform: transforms.transforms.Compose = None,
+    transform: list = None,
     num_workers: int = 8,
     model: str = "MLP",
 ) -> tuple:
@@ -37,7 +36,7 @@ def load_data(
         input_size (List[int]): Size(s) of the non-zero data to load.
         batch_size (int): Size of the batch during the training.
         val_batch_size (int): Size of the batch during the validation.
-        transform (transforms.transforms.Compose, optional): Transforms to apply to the incoming dataset. Defaults to None.
+        transform (list, optional): List of transforms to apply to the incoming dataset. Defaults to None.
         num_workers (int, optional): Maximum number of CPU to use during parallel data reading . Defaults to 8.
         model (str, optional): Model to train, could be "MLP" or "CNN". Defaults to "MLP".
 
@@ -61,7 +60,7 @@ def load_data(
                 ds,
                 input_name,
                 input_size[i],
-                transform=transform,
+                transform=transform[i],
                 output_name=output_name,
                 train=True,
                 train_size=train_size,
@@ -75,7 +74,7 @@ def load_data(
                 ds,
                 input_name,
                 input_size[i],
-                transform=transform,
+                transform=transform[i],
                 output_name=output_name,
                 train=False,
                 train_size=train_size,
@@ -264,7 +263,27 @@ def config_wandb(args: Any, model: nn.Module) -> None:
     return
 
 
-def get_mean_std(input_size: int) -> tuple:
+def get_mean_std(args, idx) -> Union[float, float]:
+    dataset = np.ravel(np.load(args.data_dir[idx])[args.input_name])
+    dataset = dataset[1 : args.input_size[idx] + 1]
+    dataset = np.concatenate((dataset.real, dataset.imag))
+
+    mean = dataset.mean()
+    sigma = dataset.std()
+    return (mean, sigma)
+
+
+def get_min_max(args, idx) -> Union[float, float]:
+    dataset = np.ravel(np.load(args.data_dir[idx])[args.input_name])
+    dataset = dataset[1 : args.input_size[idx] + 1]
+    dataset = np.concatenate((dataset.real, dataset.imag))
+
+    min_val = dataset.min()
+    max_val = dataset.max()
+    return min_val, max_val
+
+
+def oldget_mean_std(input_size: int) -> tuple:
     """Got the mean and the std of the selected dataset to normalize it.
 
     Args:
@@ -276,17 +295,27 @@ def get_mean_std(input_size: int) -> tuple:
     Returns:
         tuple: Mean and std.
     """
+    # WARNING: value for data without zero frequency
+    if input_size == 8:
+        mean_real = 0.01708110188544178
+        mean_imag = 0.12757823952915376
+        std_real = 83.8587047470984
+        std_imag = 83.79809900083342
     if input_size == 15:
-        mean = 0.1335559866334984
-        std = 0.8652517549534604
+        mean_real = 0.026748634312306206
+        mean_imag = -0.027149190131592317
+        std_real = 127.90356288704321
+        std_imag = 127.9106963046409
     elif input_size == 29:
-        # mean = 0.06869976560684468
-        mean = -0.0002752427646697678
-        # std = 0.632349175123915
-        std = 0.36513044899056124
+        mean_real = -0.19816329321132328
+        mean_imag = 0.1660631546697218
+        std_real = 186.84918924577056
+        std_imag = 187.0348672924999
     elif input_size == 57:
-        mean = 0.03523686758637773
-        std = 0.45485358612590787
+        mean_real = 0.5318905837384983
+        mean_imag = 0.2430308366945887
+        std_real = 269.0236258259143
+        std_imag = 269.07573810994944
     else:
         raise NotImplementedError("No mean/std for this dataset")
     return (mean, std)
@@ -373,16 +402,49 @@ def get_model(args: Any, init: bool = False) -> nn.Module:
     return model
 
 
-# class Normalize(nn.Module):
-#     def __init__(self, mean, std):
-#         super(Normalize, self).__init__()
-#         self.mean = torch.tensor(mean)
-#         self.std = torch.tensor(std)
+class Standardize(nn.Module):
+    """Standardize data with mean 0 and std 1. s
+    """
 
-#     def __call__(self, x):
-#         x = x - self.mean
-#         x = x / self.std
-#         return x
+    def __init__(
+        self,
+        mean: float,
+        std: float,
+        normalize: bool,
+        min_val: float = 0,
+        max_val: float = 0,
+    ):
+        self.mean = torch.tensor(mean)
+        self.std = torch.tensor(std)
+        self.normalize = normalize
+
+        if self.normalize:
+            # if we have normalized data
+            # mean and std are slightly different
+            self._update_mean_std(min_val, max_val)
+
+    def _update_mean_std(self, min_val, max_val):
+        self.mean = (self.mean - min_val) / (max_val - min_val)
+        self.std /= max_val - min_val
+
+    def __call__(self, x):
+        x = x - self.mean
+        x = x / self.std
+        return x
+
+
+class Normalize(nn.Module):
+    """Rescale data between 0 and 1
+    """
+
+    def __init__(self, min_val: float, max_val: float):
+        self.min = torch.tensor(min_val)
+        self.max = torch.tensor(max_val)
+
+    def __call__(self, x):
+        # normalize
+        x = (x - self.min) / (self.max - self.min)
+        return x
 
 
 ##################### PLOT FUNCTIONS ########################

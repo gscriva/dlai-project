@@ -48,6 +48,18 @@ def parser():
         help="use this flag to use scheduler during training",
     )
     parser.add_argument(
+        "--norm",
+        dest="normalize",
+        action="store_true",
+        help="use this flag to normalize the dataset",
+    )
+    parser.add_argument(
+        "--stand",
+        dest="standardize",
+        action="store_true",
+        help="use this flag to standardize the dataset",
+    )
+    parser.add_argument(
         "--batch_size",
         default=100,
         type=int,
