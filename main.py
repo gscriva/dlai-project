@@ -84,11 +84,11 @@ def main():
 
     # define transform to apply to each dataset
     transform = []
+    min_val, max_val = 0, 0
     for idx, _ in enumerate(args.input_size):
         transform_list = [
             torch.tensor,
         ]
-        print(idx, args.input_size)
         if args.normalize:
             min_val, max_val = get_min_max(args, idx)
             transform_list.append(Normalize(min_val, max_val))
