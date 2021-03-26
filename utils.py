@@ -283,44 +283,6 @@ def get_min_max(args, idx) -> Union[float, float]:
     return min_val, max_val
 
 
-def oldget_mean_std(input_size: int) -> tuple:
-    """Got the mean and the std of the selected dataset to normalize it.
-
-    Args:
-        input_size (int): Size of the non-zero data in the input.
-
-    Raises:
-        NotImplementedError: Raises and error if mean and std for the selected dataset are not stored.
-
-    Returns:
-        tuple: Mean and std.
-    """
-    # WARNING: value for data without zero frequency
-    if input_size == 8:
-        mean_real = 0.01708110188544178
-        mean_imag = 0.12757823952915376
-        std_real = 83.8587047470984
-        std_imag = 83.79809900083342
-    if input_size == 15:
-        mean_real = 0.026748634312306206
-        mean_imag = -0.027149190131592317
-        std_real = 127.90356288704321
-        std_imag = 127.9106963046409
-    elif input_size == 29:
-        mean_real = -0.19816329321132328
-        mean_imag = 0.1660631546697218
-        std_real = 186.84918924577056
-        std_imag = 187.0348672924999
-    elif input_size == 57:
-        mean_real = 0.5318905837384983
-        mean_imag = 0.2430308366945887
-        std_real = 269.0236258259143
-        std_imag = 269.07573810994944
-    else:
-        raise NotImplementedError("No mean/std for this dataset")
-    return (mean, std)
-
-
 def get_model(args: Any, init: bool = False) -> nn.Module:
     """Returns the correct required model.
 
