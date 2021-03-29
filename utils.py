@@ -264,6 +264,9 @@ def config_wandb(args: Any, model: nn.Module) -> None:
 
 
 def get_mean_std(args, idx) -> Union[float, float]:
+    if not os.path.exists("{0}".format(args.data_dir[idx])):
+        raise FileNotFoundError("File {0} does not exist".format(args.data_dir[idx]))
+
     dataset = np.ravel(np.load(args.data_dir[idx])[args.input_name])
     dataset = dataset[1 : args.input_size[idx] + 1]
     dataset = np.concatenate((dataset.real, dataset.imag))
@@ -274,6 +277,9 @@ def get_mean_std(args, idx) -> Union[float, float]:
 
 
 def get_min_max(args, idx) -> Union[float, float]:
+    if not os.path.exists("{0}".format(args.data_dir[idx])):
+        raise FileNotFoundError("File {0} does not exist".format(args.data_dir[idx]))
+
     dataset = np.ravel(np.load(args.data_dir[idx])[args.input_name])
     dataset = dataset[1 : args.input_size[idx] + 1]
     dataset = np.concatenate((dataset.real, dataset.imag))
