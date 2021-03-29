@@ -3,6 +3,7 @@ from multiprocessing import Pool, cpu_count
 from math import floor
 from typing import Any, Callable, List, Union
 from collections import OrderedDict
+import argparse
 
 import numpy as np
 import torch
@@ -263,7 +264,19 @@ def config_wandb(args: Any, model: nn.Module) -> None:
     return
 
 
-def get_mean_std(args, idx) -> Union[float, float]:
+def get_mean_std(args: argparse.Namespace, idx: int) -> Union[float, float]:
+    """Get mean and std of the input dataset.
+
+    Args:
+        args (argparse.Namespace): Input parser.
+        idx (int): Index of the dataset in the data_dir list.
+
+    Raises:
+        FileNotFoundError: If the data_dir is missing, function raises an error.
+
+    Returns:
+        Union[float, float]: Mean and std.
+    """
     if not os.path.exists("{0}".format(args.data_dir[idx])):
         raise FileNotFoundError("File {0} does not exist".format(args.data_dir[idx]))
 
@@ -276,7 +289,19 @@ def get_mean_std(args, idx) -> Union[float, float]:
     return (mean, sigma)
 
 
-def get_min_max(args, idx) -> Union[float, float]:
+def get_min_max(args: argparse.Namespace, idx: int) -> Union[float, float]:
+    """Get min and MAX of the input dataset.
+
+    Args:
+        args (argparse.Namespace): Input parser.
+        idx (int): Index of the dataset in the data_dir list.
+
+    Raises:
+        FileNotFoundError: If the data_dir is missing, function raises an error.
+
+    Returns:
+        Union[float, float]: min and MAX values.
+    """
     if not os.path.exists("{0}".format(args.data_dir[idx])):
         raise FileNotFoundError("File {0} does not exist".format(args.data_dir[idx]))
 
