@@ -41,6 +41,8 @@ class Speckle(Dataset):
 
         # set seed as input
         np.random.seed(seed)
+
+        # select train and validation indices
         idx = np.full(size_ds, False, dtype=bool)
         idx[
             np.random.choice(size_ds, floor(size_ds * train_size), replace=False)
