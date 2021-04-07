@@ -90,10 +90,12 @@ def main():
             torch.tensor,
         ]
         if args.normalize:
-            min_val, max_val = get_min_max(args, idx)
+            # min_val, max_val = get_min_max(args, idx)
+            min_val, max_val = -3.403331349367293, 3.2769019702924895
             transform_list.append(Normalize(min_val, max_val))
         if args.standardize:
-            mean, std = get_mean_std(args, idx)
+            # mean, std = get_mean_std(args, idx)
+            mean, std = 0.00017965349968347114, 0.43636118322494044
             transform_list.append(
                 Standardize(mean, std, args.normalize, min_val=min_val, max_val=max_val)
             )
