@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from typing import List
 
 import numpy as np
 import torch
@@ -120,6 +119,8 @@ class MultiLayerPerceptron(nn.Module):
             function = nn.LeakyReLU()
         elif activation == "gelu":
             function = nn.GELU()
+        elif activation == "selu":
+            function = nn.SELU()
         else:
             raise NotImplementedError("Activation function not implemented")
         return function
@@ -351,7 +352,6 @@ class GoogLeNet(nn.Module):
     def __init__(
         self,
         in_ch: int,
-        kernel_size: int = None,
         dropout: bool = False,
         batchnorm: bool = False,
         activation: str = "rrelu",
@@ -363,9 +363,9 @@ class GoogLeNet(nn.Module):
         self.batchnorm = batchnorm
         self.activation = self._get_activation_func(activation)
 
-        self.incept0 = self._incept_block(kernel_size, in_ch, 16, 16, 32, 16, 8, 8)
+        self.incept0 = self._incept_block(in_ch, 16, 16, 32, 16, 8, 8)
         self.maxpool0 = nn.MaxPool1d(3, stride=2, ceil_mode=True)
-        self.incept1 = self._incept_block(kernel_size, 64, 16, 16, 32, 16, 8, 8)
+        self.incept1 = self._incept_block(64, 16, 16, 32, 16, 8, 8)
 
         self.fc2 = self._fclayer(64 * 56, 512)
         self.fc3 = self._fclayer(512, 256)
@@ -472,7 +472,6 @@ class GoogLeNet(nn.Module):
 
     def _incept_block(
         self,
-        max_kernel_size: int,
         in_ch: int,
         ch1x1: int,
         ch3x3red: int,
@@ -535,6 +534,7 @@ class OldCNN(nn.Module):
                 kernel_size,
                 padding=padding,
                 padding_mode="reflect",
+                stride=stride,
             ),
             nn.BatchNorm1d(out_features),
             nn.ReLU(),

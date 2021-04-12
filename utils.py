@@ -382,7 +382,6 @@ def get_model(args: Any, init: bool = False) -> nn.Module:
     elif args.model_type == "GoogLeNet":
         model = GoogLeNet(
             1,
-            # kernel_size=args.kernel_size,
             dropout=args.dropout,
             batchnorm=args.batchnorm,
             activation=args.activation,
