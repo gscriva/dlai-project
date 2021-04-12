@@ -83,7 +83,7 @@ class Speckle(Dataset):
 
     def _get_correct_ds(self, data: Any, data_name: str, idx: np.array) -> None:
         """Depending on the model, input data are re-arrange in
-        different ways. 
+        different ways.
 
         Args:
             data ([Any]): Input data, as a numpy archive.
