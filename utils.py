@@ -27,6 +27,7 @@ def load_data(
     transform: list = None,
     num_workers: int = 8,
     model: str = "MLP",
+    train_size: float = 0.9,
 ) -> tuple:
     """Defines dataset as a class and return two loader, for training and validation set
 
@@ -40,6 +41,7 @@ def load_data(
         transform (list, optional): List of transforms to apply to the incoming dataset. Defaults to None.
         num_workers (int, optional): Maximum number of CPU to use during parallel data reading . Defaults to 8.
         model (str, optional): Model to train, could be "MLP" or "CNN". Defaults to "MLP".
+        train_size (float, optional): Size (from 0 to 1) of the train dataset wrt the validation dataset.
 
     Returns:
         tuple: Train and validation data loader.
@@ -50,8 +52,6 @@ def load_data(
         # set a non zero value for batch_size, even if
         # valid_loader is empty (train_size)
         val_batch_size = 1
-    else:
-        train_size = 0.9
 
     train_datasets = []
     val_datasets = []

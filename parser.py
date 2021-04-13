@@ -121,6 +121,12 @@ def parser():
         help="dataset directory used to load model's parameters (default: None)",
     )
     parser.add_argument(
+        "--train_size",
+        default=0.9,
+        type=float,
+        help="Size (in percent) of the training set (default: 0.9)",
+    )
+    parser.add_argument(
         "--input_name",
         default="speckleF",
         type=str,

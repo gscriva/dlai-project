@@ -131,6 +131,7 @@ def main():
             transform=transform,
             num_workers=args.workers,
             model=args.model_type,
+            train_size=args.train_size,
         )
 
         # initialize R2 score class
