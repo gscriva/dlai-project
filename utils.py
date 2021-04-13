@@ -337,7 +337,7 @@ def get_model(args: Any, init: bool = False) -> nn.Module:
             init=init,
             weights_path=args.weights_path,
         )
-    if args.model_type == "FixMLP":
+    elif args.model_type == "FixMLP":
         input_size = 112
         model = MultiLayerPerceptron(
             args.layers,
