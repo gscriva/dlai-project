@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import ConcatDataset
+from ignite.contrib.metrics.regression import R2Score
 import matplotlib.pyplot as plt
 import wandb
 
@@ -314,15 +315,15 @@ def get_min_max(args: argparse.Namespace, idx: int) -> Union[float, float]:
     return min_val, max_val
 
 
-def get_model(args: Any, init: bool = False) -> nn.Module:
+def get_model(args: argparse.Namespace, init: bool = False) -> Any:
     """Returns the correct required model.
 
     Args:
-        args (Any): Args in the parser.
+        args (argparse.Namespace): Args in the parser.
         init (bool, optional): Set True if you want initialize weights. Defaults to False.
 
     Returns:
-        nn.Module: Requested model.
+        Any: Requested model.
     """
     if args.model_type == "MLP":
         model = MultiLayerPerceptron(
@@ -437,6 +438,56 @@ class Normalize(nn.Module):
         # normalize
         x = (x - self.min) / (self.max - self.min)
         return x
+
+
+def test_all(
+    args: argparse.Namespace,
+    model: Any,
+    transform: list,
+    output_name: str,
+    test_batch_size: int,
+) -> None:
+    filelist = os.listdir(os.path.dirname(args.data_dir[0]))
+
+    print("\n\nPerforming test for all the available dataset\n")
+    for file in filelist:
+        if file[:4] != "test":
+            continue
+
+        filepath = os.path.join(os.path.dirname(args.data_dir[0]), file)
+        # define test dataloader
+        test_loader, _ = load_data(
+            [filepath],  # load_data accepts list of str
+            args.input_name,
+            output_name,
+            [int(file[-6:-4]) + 1],
+            test_batch_size,
+            0,
+            transform=transform,
+            num_workers=args.workers,
+            model=args.model_type,
+        )
+
+        # define r2 metrics
+        test_r2 = R2Score()
+        test_r2.reset()
+
+        model.eval()
+
+        with torch.no_grad():
+            for data, target in test_loader:
+                if args.model_type == "GoogLeNet":
+                    data = data.float()
+
+                pred = model(data)
+
+                # pred has dim (batch_size, 1)
+                pred = pred.squeeze()
+
+                # update R2 values iteratively
+                test_r2.update((pred, target))
+
+            print("Test on dataset {}: R2 score:{:.6}".format(file, test_r2.compute()))
 
 
 ##################### PLOT FUNCTIONS ########################

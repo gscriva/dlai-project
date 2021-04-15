@@ -108,12 +108,6 @@ def parser():
         help=" list of datasets directory (used for both train and validation)",
     )
     parser.add_argument(
-        "--test_data_dir",
-        nargs="+",
-        type=str,
-        help="list of datasets directory used for testing",
-    )
-    parser.add_argument(
         "--weights_path",
         default=None,
         type=str,

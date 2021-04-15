@@ -14,10 +14,11 @@ from utils import (
     load_data,
     config_wandb,
     get_model,
-    get_mean_std,
-    get_min_max,
+    # get_mean_std,
+    # get_min_max,
     Normalize,
     Standardize,
+    test_all,
 )
 from init_parameters import freeze_param, init_weights
 
@@ -91,11 +92,11 @@ def main():
             torch.tensor,
         ]
         if args.normalize:
-            # min_val, max_val = get_min_max(args, idx)
+            # min_val, max_val = get_min_max(args, idx) # compute min and max in each dataset
             min_val, max_val = -3.403331349367293, 3.2769019702924895
             transform_list.append(Normalize(min_val, max_val))
         if args.standardize:
-            # mean, std = get_mean_std(args, idx)
+            # mean, std = get_mean_std(args, idx) # compute mean and std in each dataset
             mean, std = 0.00017965349968347114, 0.43636118322494044
             transform_list.append(
                 Standardize(mean, std, args.normalize, min_val=min_val, max_val=max_val)
@@ -291,7 +292,10 @@ def main():
             torch.save(
                 model.state_dict(), os.path.join(wandb.run.dir, "model_final.pt")
             )
-        return valid_r2.compute()
+
+        # perform test on all dataset
+        test_all(args, model, transform, OUTPUT_NAME, TEST_BATCH_SIZE)
+        # return valid_r2.compute()
     else:
         print("Loading model {}...".format(args.resume))
         checkpoint = torch.load(args.resume, map_location=lambda storage, loc: storage)
@@ -299,40 +303,8 @@ def main():
         # load weights
         model.load_state_dict(checkpoint["model_state_dict"])
 
-        # define test dataloader
-        test_loader, _ = load_data(
-            args.test_data_dir,
-            args.input_name,
-            OUTPUT_NAME,
-            args.input_size,
-            TEST_BATCH_SIZE,
-            0,
-            transform=transform,
-            num_workers=args.workers,
-            model=args.model_type,
-        )
-
-        # define r2 metrics
-        test_r2 = R2Score()
-        test_r2.reset()
-
-        model.eval()
-
-        with torch.no_grad():
-            for data, target in test_loader:
-                if args.model_type == "GoogLeNet":
-                    data = data.float()
-
-                pred = model(data)
-
-                # pred has dim (batch_size, 1)
-                pred = pred.squeeze()
-
-                # update R2 values iteratively
-                test_r2.update((pred, target))
-
-            print(f"Test set: R2 score: {test_r2.compute():.4f}\n")
-        return test_r2.compute()
+        # perform test on all dataset
+        test_all(args, model, transform, OUTPUT_NAME, TEST_BATCH_SIZE)
 
 
 if __name__ == "__main__":
