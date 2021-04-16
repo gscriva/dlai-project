@@ -13,7 +13,7 @@ from ignite.contrib.metrics.regression import R2Score
 import matplotlib.pyplot as plt
 import wandb
 
-from model import MultiLayerPerceptron, CNN, FixCNN, GoogLeNet
+from model import MultiLayerPerceptron, CNN, FixCNN, GoogLeNet, OldCNN
 from data_loader import Speckle
 from init_parameters import load_param
 
@@ -387,8 +387,15 @@ def get_model(args: argparse.Namespace, init: bool = False) -> Any:
             batchnorm=args.batchnorm,
             activation=args.activation,
         )
+    elif args.model_type == "OldCNN":
+        model = OldCNN(
+            args.input_size[0],  # OldCNN can train with only a dataset
+            dropout=args.dropout,
+            batchnorm=args.batchnorm,
+            activation=args.activation,
+        )
     else:
-        model_list = "MLP, FixMLP, CNN, FixCNN, GoogLeNet and SmallCNN"
+        model_list = "MLP, FixMLP, CNN, FixCNN, GoogLeNet, OldCNN and SmallCNN"
         raise NotImplementedError(
             "Only {0} are accepted as model type".format(model_list)
         )
@@ -449,7 +456,7 @@ def test_all(
 ) -> None:
     filelist = os.listdir(os.path.dirname(args.data_dir[0]))
 
-    print("\n\nPerforming test for all the available dataset\n")
+    print("\n\nPerforming test for all the available datasets\n")
     for file in filelist:
         if file[:4] != "test":
             continue

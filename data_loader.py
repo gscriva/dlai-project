@@ -106,6 +106,12 @@ class Speckle(Dataset):
             self.dataset = data[data_name][idx, 1 : self.input_size]
             self._reshape_data()
             self.dataset = np.reshape(self.dataset, (-1, 1, 56))
+        elif self.model == "OldCNN":
+            self.dataset = np.append(
+                data[data_name][idx, -(self.input_size - 1) :],
+                data[data_name][idx, 1 : self.input_size],
+                axis=-1,
+            )
         else:
             raise NotImplementedError("Only MLP and CNN are accepted")
 
@@ -116,9 +122,9 @@ class Speckle(Dataset):
     def _get_real_ds(self) -> None:
         """Divides real and imag part of the input data.
         """
+        real_ds = np.real(self.dataset)
+        imag_ds = np.imag(self.dataset)
         if self.model == "FixMLP" or self.model == "FixCNN":
-            real_ds = np.real(self.dataset)
-            imag_ds = np.imag(self.dataset)
 
             if self.model == "FixMLP":
                 shape = (self.__len__(), 112)
@@ -130,9 +136,11 @@ class Speckle(Dataset):
             data[..., 1::2] = imag_ds
 
             self.dataset = data
+        elif self.model == "OldCNN":
+            self.dataset = np.stack(
+                (np.real(self.dataset), np.real(self.dataset)), axis=1
+            )
         else:
-            real_ds = np.real(self.dataset)
-            imag_ds = np.imag(self.dataset)
             self.dataset = np.append(real_ds, imag_ds, axis=-1)
 
     def _reshape_data(self) -> None:
