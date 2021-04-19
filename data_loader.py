@@ -1,8 +1,11 @@
+"Data preprocessing according to the current model."
+
 from typing import Any
+import random
+from math import floor
 
 import numpy as np
 import torch
-from math import floor
 from torch.utils.data import Dataset
 from torchvision import transforms
 
@@ -39,7 +42,10 @@ class Speckle(Dataset):
         # len single data
         len_data = data[data_name].shape[1]
 
-        # set seed as input
+        # reproducibility (to ensure we get
+        # the same training and validation set)
+        torch.manual_seed(seed)
+        random.seed(seed)
         np.random.seed(seed)
 
         # select train and validation indices
@@ -144,7 +150,7 @@ class Speckle(Dataset):
             self.dataset = np.append(real_ds, imag_ds, axis=-1)
 
     def _reshape_data(self) -> None:
-        """Reshape input data to fit in a fix-size array. 
+        """Reshape input data to fit in a fix-size array.
         """
         shape = (*self.dataset.shape[:-1], 56)
         data = np.zeros(shape, dtype=np.complex128)
@@ -167,7 +173,7 @@ class Speckle(Dataset):
         """This method fill 4 channels using available data.
         If the smaller size is passed, only the first channel will be used.
         If the medium size is passed the first two channels.
-        If the larger one is passed, we fill two extra channels, since everytime 
+        If the larger one is passed, we fill two extra channels, since everytime
         the input size is double.
         """
         if self.input_size == 15:

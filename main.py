@@ -1,5 +1,8 @@
+"Main for DLAI project."
+
 import os
 from parser import parser
+import random
 
 import numpy as np
 import torch
@@ -26,9 +29,12 @@ from init_parameters import freeze_param, init_weights
 # Fixed parameters
 OUTPUT_NAME = "evalues"
 TEST_BATCH_SIZE = 500
+SEED = 0
 
 
 def main():
+    """Train, test and evaluate the model.
+    """
     # Load parser
     pars = parser()
     args = pars.parse_args()
@@ -60,6 +66,11 @@ def main():
             save_path, exist_ok=True,
         )
         print("\nSaving checkpoints in {0}\n".format(save_path))
+
+    # reproducibility
+    torch.manual_seed(SEED)
+    random.seed(SEED)
+    np.random.seed(SEED)
 
     # limit number of CPUs
     torch.set_num_threads(args.workers)

@@ -1,8 +1,9 @@
+"Utility functions used in other modules."
+
 import os
 from multiprocessing import Pool, cpu_count
 from math import floor
-from typing import Any, Callable, List, Union
-from collections import OrderedDict
+from typing import Any, Callable, List, Tuple, Optional, Dict
 import argparse
 
 import numpy as np
@@ -25,12 +26,12 @@ def load_data(
     input_size: List[int],
     batch_size: int,
     val_batch_size: int,
-    transform: list = None,
+    transform: Optional[list] = None,
     num_workers: int = 8,
     model: str = "MLP",
     train_size: float = 0.9,
 ) -> tuple:
-    """Defines dataset as a class and return two loader, for training and validation set
+    """Defines dataset as a class and return two loaders, for training and validation set
 
     Args:
         dataset_path (List[str]): Path(s) to the files.
@@ -39,10 +40,13 @@ def load_data(
         input_size (List[int]): Size(s) of the non-zero data to load.
         batch_size (int): Size of the batch during the training.
         val_batch_size (int): Size of the batch during the validation.
-        transform (list, optional): List of transforms to apply to the incoming dataset. Defaults to None.
-        num_workers (int, optional): Maximum number of CPU to use during parallel data reading . Defaults to 8.
+        transform (list, optional): List of transforms to apply to the incoming dataset.
+            Defaults to None.
+        num_workers (int, optional): Maximum number of CPU to use during parallel data reading.
+            Defaults to 8.
         model (str, optional): Model to train, could be "MLP" or "CNN". Defaults to "MLP".
-        train_size (float, optional): Size (from 0 to 1) of the train dataset wrt the validation dataset.
+        train_size (float, optional): Size (from 0 to 1) of the train dataset
+            wrt the validation dataset.
 
     Returns:
         tuple: Train and validation data loader.
@@ -95,21 +99,23 @@ def load_data(
     val_loader = torch.utils.data.DataLoader(
         val_set, batch_size=val_batch_size, shuffle=False, num_workers=num_workers
     )
+    print(type(train_loader))
     return train_loader, val_loader
 
 
 def save_as_npz(
     data_path: str, data_size: int, seed: int = 42, test_size: float = 0.2
 ) -> None:
-    """Read and save .dat data in a .npz file. The data retrieved are 
+    """Read and save .dat data in a .npz file. The data retrieved are
     the array of speckle (both real and fourier), the x axis and the output values.
-    
-    TODO: Use an input to specify the names of files to be retrieved. 
+
+    TODO: Use an input to specify the names of files to be retrieved.
 
     Args:
         data_path (str): Path to the files.
         data_size (int): Size of a single array in the data.
-        seed (int, optional): Seed to retrieve pseudo-randomly training and test datasets. Defaults to 42.
+        seed (int, optional): Seed to retrieve pseudo-randomly training and test datasets.
+            Defaults to 42.
         test_size (float, optional): Size (in %) of the test set. Defaults to 0.2.
     """
     paths = []
@@ -167,9 +173,9 @@ def read_arr(
     filepath: str,
     data_size: int,
     usecols: Any = 0,
-    outname: str = None,
-    outfile: str = None,
-) -> tuple:
+    outname: Optional[str] = None,
+    outfile: Optional[str] = None,
+) -> Tuple[np.array, np.array]:
     """This function reads .txt or .dat data and saves them as .npy or returns them as
         a numpy array.
 
@@ -177,8 +183,10 @@ def read_arr(
         filepath (str): Path to the data.
         data_size (int): Size of a single element, since they are stacked vertically.
         usecols (int or tuple, optional): Specifies column (or columns) to import. Default to 0.
-        outname (str, optional): To set iff the filename is not the original name in the path. Default to None.
-        outfile (str, optional): Name of the file to be saved, if None output is not saved. Default to None.
+        outname (str, optional): To set iff the filename is not the original name in the path.
+            Default to None.
+        outfile (str, optional): Name of the file to be saved, if None output is not saved.
+            Default to None.
 
     Returns:
         tuple: array and array's name according to its filename or the optional outname.
@@ -196,7 +204,7 @@ def read_arr(
 
     out = np.loadtxt(filepath, usecols=usecols)
 
-    if type(usecols) is tuple:
+    if isinstance(usecols, tuple):
         # input is complex
         out = out[:, 0] + 1j * out[:, 1]
     out = np.squeeze(np.reshape(out, (-1, data_size)))
@@ -208,7 +216,9 @@ def read_arr(
     return (out, name)
 
 
-def split_ds(datas: list, seed: int = 42, test_size: float = 0.2) -> dict:
+def split_ds(
+    datas: list, seed: int = 42, test_size: float = 0.2
+) -> Dict[str, List[Tuple[np.array, np.array]]]:
     """Split the dataset between training and test set.
 
     Args:
@@ -217,7 +227,7 @@ def split_ds(datas: list, seed: int = 42, test_size: float = 0.2) -> dict:
         test_size (float, optional): Percent of the size the test set. Defaults to 0.2.
 
     Returns:
-        dict: Dictionary with two list, train and test. 
+        dict: Dictionary with two list, train and test.
     """
     size_ds = datas[0][0].shape[0]
     np.random.seed(seed)
@@ -235,7 +245,7 @@ def config_wandb(args: Any, model: nn.Module) -> None:
     """Save on wandb current training settings.
 
     Args:
-        args (Any): Arguments defined as in parser. 
+        args (Any): Arguments defined as in parser.
         model (nn.Module): Model currently used.
     """
     # initialize wandb remote repo
@@ -265,7 +275,7 @@ def config_wandb(args: Any, model: nn.Module) -> None:
     return
 
 
-def get_mean_std(args: argparse.Namespace, idx: int) -> Union[float, float]:
+def get_mean_std(args: argparse.Namespace, idx: int) -> Tuple[float, float]:
     """Get mean and std of the input dataset.
 
     Args:
@@ -276,7 +286,7 @@ def get_mean_std(args: argparse.Namespace, idx: int) -> Union[float, float]:
         FileNotFoundError: If the data_dir is missing, function raises an error.
 
     Returns:
-        Union[float, float]: Mean and std.
+        Tuple[float, float]: Mean and std.
     """
     if not os.path.exists("{0}".format(args.data_dir[idx])):
         raise FileNotFoundError("File {0} does not exist".format(args.data_dir[idx]))
@@ -290,7 +300,7 @@ def get_mean_std(args: argparse.Namespace, idx: int) -> Union[float, float]:
     return (mean, sigma)
 
 
-def get_min_max(args: argparse.Namespace, idx: int) -> Union[float, float]:
+def get_min_max(args: argparse.Namespace, idx: int) -> Tuple[float, float]:
     """Get min and MAX of the input dataset.
 
     Args:
@@ -301,7 +311,7 @@ def get_min_max(args: argparse.Namespace, idx: int) -> Union[float, float]:
         FileNotFoundError: If the data_dir is missing, function raises an error.
 
     Returns:
-        Union[float, float]: min and MAX values.
+        Tuple[float, float]: min and MAX values.
     """
     if not os.path.exists("{0}".format(args.data_dir[idx])):
         raise FileNotFoundError("File {0} does not exist".format(args.data_dir[idx]))
@@ -403,7 +413,7 @@ def get_model(args: argparse.Namespace, init: bool = False) -> Any:
 
 
 class Standardize(nn.Module):
-    """Standardize data with mean 0 and std 1. s
+    """Standardize data with mean 0 and std 1.
     """
 
     def __init__(
@@ -434,7 +444,7 @@ class Standardize(nn.Module):
 
 
 class Normalize(nn.Module):
-    """Rescale data between 0 and 1
+    """Rescale data between 0 and 1.
     """
 
     def __init__(self, min_val: float, max_val: float):
@@ -450,10 +460,19 @@ class Normalize(nn.Module):
 def test_all(
     args: argparse.Namespace,
     model: Any,
-    transform: list,
+    transform: List[Any],
     output_name: str,
     test_batch_size: int,
 ) -> None:
+    """Test the input model with all the available datasets.
+
+    Args:
+        args (argparse.Namespace): Parser.
+        model (Any): Model to test.
+        transform (List[Any]): Set of trasformation for input data.
+        output_name (str): Name of the target data.
+        test_batch_size (int): Size of the test batch.
+    """
     filelist = os.listdir(os.path.dirname(args.data_dir[0]))
 
     print("\n\nPerforming test for all the available datasets\n")
