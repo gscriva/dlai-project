@@ -30,7 +30,9 @@ def load_data(
     num_workers: int = 8,
     model: str = "MLP",
     train_size: float = 0.9,
-) -> tuple:
+) -> Tuple[
+    torch.utils.data.dataloader.DataLoader, torch.utils.data.dataloader.DataLoader
+]:
     """Defines dataset as a class and return two loaders, for training and validation set
 
     Args:
@@ -49,7 +51,8 @@ def load_data(
             wrt the validation dataset.
 
     Returns:
-        tuple: Train and validation data loader.
+    Tuple[torch.utils.data.dataloader.DataLoader,
+        torch.utils.data.dataloader.DataLoader]: Train and validation data loader.
     """
 
     if val_batch_size == 0:
@@ -157,7 +160,7 @@ def save_as_npz(
     return
 
 
-def read_arr_help(args: Any) -> Callable[[str, int, Any, str, bool], tuple]:
+def read_arr_help(args: Any) -> Callable[[str, int, Any, str, str], tuple]:
     """A helper for read_arr used in parallel mode to unpack arguments.
 
     Args:
@@ -421,8 +424,8 @@ class Standardize(nn.Module):
         mean: float,
         std: float,
         normalize: bool,
-        min_val: float = 0,
-        max_val: float = 0,
+        min_val: float = 0.0,
+        max_val: float = 0.0,
     ):
         self.mean = torch.tensor(mean)
         self.std = torch.tensor(std)
