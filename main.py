@@ -298,15 +298,16 @@ def main():
                     checkpoint_dict, save_path + "/model-epoch-{0}.tar".format(epoch,),
                 )
 
+        # retrive best model of train session
+        model.load_state_dict(torch.load(save_path + "/best-model.tar"))
+        # save model to wandb
         if args.save_wandb:
-            # save model to wandb
             torch.save(
                 model.state_dict(), os.path.join(wandb.run.dir, "model_final.pt")
             )
 
         # perform test on all dataset
         test_all(args, model, transform, OUTPUT_NAME, TEST_BATCH_SIZE)
-        # return valid_r2.compute()
     else:
         print("Loading model {}...".format(args.resume))
         checkpoint = torch.load(args.resume, map_location=lambda storage, loc: storage)

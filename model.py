@@ -45,15 +45,10 @@ class MultiLayerPerceptron(nn.Module):
         print("structure {0}\n".format(sizes))
 
         if init:
-            try:
-                parameter = load_param(weights_path, input_size, method=None)
-                print(
-                    "\nModel parameters initialized using weights in {0}".format(
-                        weights_path
-                    )
-                )
-            except RuntimeWarning:
-                print("weight_path={0}, maybe not a path".format(weights_path))
+            # if model has input layer of different size
+            # weights have to be interpolated
+            method = None if fix_model else "interp"
+            parameter = load_param(weights_path, input_size, method=method)
 
         fc_layers = OrderedDict()
         for i in range(len(sizes) - 1):

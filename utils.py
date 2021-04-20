@@ -102,7 +102,6 @@ def load_data(
     val_loader = torch.utils.data.DataLoader(
         val_set, batch_size=val_batch_size, shuffle=False, num_workers=num_workers
     )
-    print(type(train_loader))
     return train_loader, val_loader
 
 
@@ -244,12 +243,12 @@ def split_ds(
     return data_dict
 
 
-def config_wandb(args: Any, model: nn.Module) -> None:
+def config_wandb(args: argparse.Namespace, model: Any) -> None:
     """Save on wandb current training settings.
 
     Args:
-        args (Any): Arguments defined as in parser.
-        model (nn.Module): Model currently used.
+        args (argparse.Namespace): Arguments defined as in parser.
+        model (Any): Model currently used.
     """
     # initialize wandb remote repo
     wandb.init(project="dlai-project")
@@ -269,6 +268,8 @@ def config_wandb(args: Any, model: nn.Module) -> None:
     config.batchnorm = args.batchnorm
     config.activation = args.activation
     config.weights_path = args.weights_path
+    config.normalize = args.normalize
+    config.standardize = args.standardize
 
     # parameter for wandb update
     config.log_interval = 5
@@ -482,14 +483,16 @@ def test_all(
     for file in filelist:
         if file[:4] != "test":
             continue
-
+        # if int(file[-6:-4]) + 1 != 15:  # patch brutta per MPL
+        #     continue
         filepath = os.path.join(os.path.dirname(args.data_dir[0]), file)
+
         # define test dataloader
         test_loader, _ = load_data(
             [filepath],  # load_data accepts list of str
             args.input_name,
             output_name,
-            [int(file[-6:-4]) + 1],
+            [int(file[-6:-4]) + 1],  # get scale from dataset filename
             test_batch_size,
             0,
             transform=transform,
