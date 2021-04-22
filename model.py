@@ -373,7 +373,7 @@ class GoogLeNet(nn.Module):
         x = self._incept0aux(x)
         # N x 64 x 112
         x = self.maxpool0(x)
-        # N x 64 x 64
+        # N x 64 x 56
         x = self._incept1aux(x)
         x = x.view(-1, 64 * 56)
         x = self.fc2(x)
@@ -496,7 +496,7 @@ class GoogLeNet(nn.Module):
         return incept
 
 
-class OldCNN(nn.Module):
+class MyCNN(nn.Module):
     def __init__(
         self,
         input_size: int,
@@ -504,35 +504,19 @@ class OldCNN(nn.Module):
         batchnorm: bool = False,
         activation: str = "rrelu",
     ):
-        super(OldCNN, self).__init__()
+        super(MyCNN, self).__init__()
 
         self.input_size = input_size
         self.dropout = dropout
         self.batchnorm = batchnorm
         self.activation = self._get_activation_func(activation)
 
-        self.conv1 = self._convlayer(2, 16, 3, padding=1)
-        if self.input_size > 14:
-            self.conv2 = self._convlayer(
-                16, 32, 3, padding=1, pool_out=(self.input_size - 1) / 2
-            )
-            if self.input_size > 28:
-                self.conv3 = self._convlayer(
-                    32, 32, 3, padding=1, pool_out=(self.input_size - 1) / 2
-                )
-            if self.input_size > 56:
-                self.conv4 = self._convlayer(
-                    32, 32, 3, padding=1, pool_out=(self.input_size - 1) / 2
-                )
-            self.pool5 = nn.Sequential(nn.AdaptiveAvgPool1d(4))
-        else:
-            self.pool5 = nn.Sequential(nn.AdaptiveAvgPool1d(8))
+        self.conv1 = self._convlayer(2, 4, 3, padding=1)
+        self.conv2 = self._convlayer(4, 8, 3, padding=1)
+        self.conv3 = self._convlayer(8, 16, 3, padding=1)
 
-        self.fc1 = self._fclayer(4 * 32, 128)
-        self.fc2 = self._fclayer(128, 128)
-        self.fc3 = self._fclayer(128, 128)
-
-        self.fc4 = nn.Sequential(nn.Linear(128, 1))
+        self.fc1 = nn.Sequential(nn.Linear(16 * 112, 64))
+        self.fc2 = nn.Sequential(nn.Linear(64, 1))
 
     def _convlayer(
         self,
@@ -550,7 +534,7 @@ class OldCNN(nn.Module):
             out_ch,
             kernel_size,
             padding=padding,
-            padding_mode="circular",
+            padding_mode="zeros",
             stride=stride,
         )
         if self.batchnorm:
@@ -605,24 +589,11 @@ class OldCNN(nn.Module):
         return function
 
     def forward(self, x):
-        x = x.view((x.shape[0], -1, x.shape[-1]))
-        # input_size X 2
         x = self.conv1(x)
-        if self.input_size > 14:
-            # input_size X 16
-            x = self.conv2(x)
-        if self.input_size > 28:
-            # input_size/2 X 32
-            x = self.conv3(x)
-        if self.input_size > 56:
-            # input_size/4 X 32
-            x = self.conv4(x)
-        # ? X (16 oppure 32)
-        x = self.pool5(x)
-        # 8 X 16 oppure 4 X 32
+        x = self.conv2(x)
+        x = self.conv3(x)
+
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
         x = self.fc2(x)
-        x = self.fc3(x)
-        x = self.fc4(x)
         return x

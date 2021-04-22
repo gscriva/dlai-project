@@ -17,8 +17,8 @@ from utils import (
     load_data,
     config_wandb,
     get_model,
-    # get_mean_std,
-    # get_min_max,
+    get_mean_std,
+    get_min_max,
     Normalize,
     Standardize,
     test_all,
@@ -65,7 +65,7 @@ def main():
         os.makedirs(
             save_path, exist_ok=True,
         )
-        print("\nSaving checkpoints in {0}\n".format(save_path))
+        print("\nSaving checkpoints in {0}".format(save_path))
 
     # reproducibility
     torch.manual_seed(SEED)
@@ -82,8 +82,13 @@ def main():
 
     # import model and move it to GPU (if available)
     model = get_model(args, init=init).to(device)
+    print(
+        "\nNumber of model parameters: {0}\n".format(
+            sum(p.numel() for p in model.parameters() if p.requires_grad)
+        )
+    )
 
-    # Change type of weights
+    # Change type of weights since data are double
     if args.model_type != "GoogLeNet":
         model = model.double()
 
@@ -103,11 +108,13 @@ def main():
             torch.tensor,
         ]
         if args.normalize:
-            # min_val, max_val = get_min_max(args, idx) # compute min and max in each dataset
+            # min_val, max_val = get_min_max(
+            #     args, idx
+            # )  # compute min and max in each dataset
             min_val, max_val = -3.403331349367293, 3.2769019702924895
             transform_list.append(Normalize(min_val, max_val))
         if args.standardize:
-            # mean, std = get_mean_std(args, idx) # compute mean and std in each dataset
+            # mean, std = get_mean_std(args, idx)  # compute mean and std in each dataset
             mean, std = 0.00017965349968347114, 0.43636118322494044
             transform_list.append(
                 Standardize(mean, std, args.normalize, min_val=min_val, max_val=max_val)
@@ -200,6 +207,7 @@ def main():
             # for data, target in tqdm_iterator:
             for data, target in train_loader:
                 data, target = data.to(device), target.to(device)
+                # data are double but GoggLeNet accepts float
                 if args.model_type == "GoogLeNet":
                     data, target = data.float(), target.float()
 
@@ -234,6 +242,7 @@ def main():
             with torch.no_grad():
                 for data, target in valid_loader:
                     data, target = data.to(device), target.to(device)
+                    # data are double but GoggLeNet accepts float
                     if args.model_type == "GoogLeNet":
                         data, target = data.float(), target.float()
 
@@ -299,7 +308,9 @@ def main():
                 )
 
         # retrive best model of train session
-        model.load_state_dict(torch.load(save_path + "/best-model.tar"))
+        model.load_state_dict(
+            torch.load(save_path + "/best-model.tar")["model_state_dict"]
+        )
         # save model to wandb
         if args.save_wandb:
             torch.save(

@@ -112,18 +112,26 @@ class Speckle(Dataset):
             self.dataset = data[data_name][idx, 1 : self.input_size]
             self._reshape_data()
             self.dataset = np.reshape(self.dataset, (-1, 1, 56))
-        elif self.model == "OldCNN":
+        elif self.model == "MyCNN":
             self.dataset = np.append(
                 data[data_name][idx, -(self.input_size - 1) :],
                 data[data_name][idx, 1 : self.input_size],
                 axis=-1,
             )
+            self._embedding()
         else:
             raise NotImplementedError("Only MLP and CNN are accepted")
 
         # Fourier data are complex, so we take real and imag part
         # as feature vector
         self._get_real_ds()
+
+    def _embedding(self) -> None:
+        """Embedding the dataset in a fix-size array, padding to zero.
+        """
+        embedded_dataset = np.zeros((self.dataset.shape[0], 112), dtype=np.cdouble)
+        embedded_dataset[:, 57 - self.input_size : 55 + self.input_size] = self.dataset
+        self.dataset = embedded_dataset
 
     def _get_real_ds(self) -> None:
         """Divides real and imag part of the input data.
@@ -142,7 +150,7 @@ class Speckle(Dataset):
             data[..., 1::2] = imag_ds
 
             self.dataset = data
-        elif self.model == "OldCNN":
+        elif self.model == "MyCNN":
             self.dataset = np.stack(
                 (np.real(self.dataset), np.real(self.dataset)), axis=1
             )

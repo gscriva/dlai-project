@@ -14,7 +14,7 @@ from ignite.contrib.metrics.regression import R2Score
 import matplotlib.pyplot as plt
 import wandb
 
-from model import MultiLayerPerceptron, CNN, FixCNN, GoogLeNet, OldCNN
+from model import MultiLayerPerceptron, CNN, FixCNN, GoogLeNet, MyCNN
 from data_loader import Speckle
 from init_parameters import load_param
 
@@ -401,9 +401,9 @@ def get_model(args: argparse.Namespace, init: bool = False) -> Any:
             batchnorm=args.batchnorm,
             activation=args.activation,
         )
-    elif args.model_type == "OldCNN":
-        model = OldCNN(
-            args.input_size[0],  # OldCNN can train with only a dataset
+    elif args.model_type == "MyCNN":
+        model = MyCNN(
+            args.input_size[0],  # MyCNN can train with only a dataset
             dropout=args.dropout,
             batchnorm=args.batchnorm,
             activation=args.activation,
@@ -481,10 +481,14 @@ def test_all(
 
     print("\n\nPerforming test for all the available datasets\n")
     for file in filelist:
+        # dataset are saved as train_ or test_
         if file[:4] != "test":
             continue
-        # if int(file[-6:-4]) + 1 != 15:  # patch brutta per MPL
-        #     continue
+        # very ugly patch for MLP model only
+        # where we can test only the training dimension
+        if (args.model_type == "MLP") and (args.input_size[0] != int(file[-6:-4]) + 1):
+            continue
+
         filepath = os.path.join(os.path.dirname(args.data_dir[0]), file)
 
         # define test dataloader
