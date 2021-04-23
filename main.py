@@ -3,6 +3,7 @@
 import os
 from parser import parser
 import random
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -47,7 +48,7 @@ def main():
 
     if args.train:
         # Initialize directories
-        save_path = "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-nofreeze{7}-wd{8}-kernel{9}-norm{10}-stand{11}-tsize{12}".format(
+        save_path = "checkpoints/{0}/L_{1}/{13}-batch{2}-{5}-init{6}-stand{11}-norm{10}".format(
             args.model_type,
             args.input_size[0] - 1 if len(args.input_size) == 1 else args.input_size,
             args.batch_size,
@@ -61,6 +62,7 @@ def main():
             args.normalize,
             args.standardize,
             args.train_size,
+            datetime.now().strftime("%Y%m%d_%H%M%S"),
         )
         os.makedirs(
             save_path, exist_ok=True,
