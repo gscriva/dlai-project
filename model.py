@@ -1,5 +1,4 @@
 from collections import OrderedDict
-from typing import List
 
 import numpy as np
 import torch
@@ -46,15 +45,10 @@ class MultiLayerPerceptron(nn.Module):
         print("structure {0}\n".format(sizes))
 
         if init:
-            try:
-                parameter = load_param(weights_path, input_size, method=None)
-                print(
-                    "\nModel parameters initialized using weights in {0}".format(
-                        weights_path
-                    )
-                )
-            except RuntimeWarning:
-                print("weight_path={0}, maybe not a path".format(weights_path))
+            # if model has input layer of different size
+            # weights have to be interpolated
+            method = None if fix_model else "interp"
+            parameter = load_param(weights_path, input_size, method=method)
 
         fc_layers = OrderedDict()
         for i in range(len(sizes) - 1):
@@ -120,6 +114,8 @@ class MultiLayerPerceptron(nn.Module):
             function = nn.LeakyReLU()
         elif activation == "gelu":
             function = nn.GELU()
+        elif activation == "selu":
+            function = nn.SELU()
         else:
             raise NotImplementedError("Activation function not implemented")
         return function
@@ -351,7 +347,6 @@ class GoogLeNet(nn.Module):
     def __init__(
         self,
         in_ch: int,
-        kernel_size: int = None,
         dropout: bool = False,
         batchnorm: bool = False,
         activation: str = "rrelu",
@@ -363,9 +358,9 @@ class GoogLeNet(nn.Module):
         self.batchnorm = batchnorm
         self.activation = self._get_activation_func(activation)
 
-        self.incept0 = self._incept_block(kernel_size, in_ch, 16, 16, 32, 16, 8, 8)
+        self.incept0 = self._incept_block(in_ch, 16, 16, 32, 16, 8, 8)
         self.maxpool0 = nn.MaxPool1d(3, stride=2, ceil_mode=True)
-        self.incept1 = self._incept_block(kernel_size, 64, 16, 16, 32, 16, 8, 8)
+        self.incept1 = self._incept_block(64, 16, 16, 32, 16, 8, 8)
 
         self.fc2 = self._fclayer(64 * 56, 512)
         self.fc3 = self._fclayer(512, 256)
@@ -378,7 +373,7 @@ class GoogLeNet(nn.Module):
         x = self._incept0aux(x)
         # N x 64 x 112
         x = self.maxpool0(x)
-        # N x 64 x 64
+        # N x 64 x 56
         x = self._incept1aux(x)
         x = x.view(-1, 64 * 56)
         x = self.fc2(x)
@@ -472,7 +467,6 @@ class GoogLeNet(nn.Module):
 
     def _incept_block(
         self,
-        max_kernel_size: int,
         in_ch: int,
         ch1x1: int,
         ch3x3red: int,
@@ -502,51 +496,104 @@ class GoogLeNet(nn.Module):
         return incept
 
 
-class OldCNN(nn.Module):
-    def __init__(self):
-        super(OldCNN, self).__init__()
-
-        self.conv1 = self.convlayer(1, 16, 3, padding=1)
-        self.conv2 = self.convlayer(16, 32, 3, padding=1)
-        self.conv3 = self.convlayer(32, 64, 3, padding=1)
-        self.conv4 = self.convlayer(64, 64, 3, padding=1)
-        self.conv5 = nn.Sequential(
-            self.convlayer(64, 128, 3, padding=1),
-            self.convlayer(128, 128, 3, padding=1),
-            self.convlayer(128, 256, 3, padding=1),
-            self.convlayer(256, 512, 3, padding=1),
-            self.convlayer(512, 512, 3, padding=1),
-        )
-
-        self.fc1 = nn.Sequential(nn.Linear(512 * 256, 1),)
-
-    def convlayer(
+class MyCNN(nn.Module):
+    def __init__(
         self,
-        input_features: int,
-        out_features: int,
+        input_size: int,
+        dropout: bool = False,
+        batchnorm: bool = False,
+        activation: str = "rrelu",
+    ):
+        super(MyCNN, self).__init__()
+
+        self.input_size = input_size
+        self.dropout = dropout
+        self.batchnorm = batchnorm
+        self.activation = self._get_activation_func(activation)
+
+        self.conv1 = self._convlayer(2, 4, 3, padding=1)
+        self.conv2 = self._convlayer(4, 8, 3, padding=1)
+        self.conv3 = self._convlayer(8, 16, 3, padding=1)
+
+        self.fc1 = nn.Sequential(nn.Linear(16 * 112, 64))
+        self.fc2 = nn.Sequential(nn.Linear(64, 1))
+
+    def _convlayer(
+        self,
+        in_ch: int,
+        out_ch: int,
         kernel_size: int,
         padding: int = 0,
         stride: int = 1,
-    ):
-        return nn.Sequential(
-            nn.Conv1d(
-                input_features,
-                out_features,
-                kernel_size,
-                padding=padding,
-                padding_mode="reflect",
-            ),
-            nn.BatchNorm1d(out_features),
-            nn.ReLU(),
+        pool_out: int = None,
+    ) -> nn.modules.container.Sequential:
+        layer = OrderedDict()
+
+        layer["conv"] = nn.Conv1d(
+            in_ch,
+            out_ch,
+            kernel_size,
+            padding=padding,
+            padding_mode="zeros",
+            stride=stride,
         )
+        if self.batchnorm:
+            layer["batch"] = nn.BatchNorm1d(out_ch)
+
+        if self.dropout:
+            layer["dropout"] = nn.Dropout()
+
+        layer["activation"] = self.activation
+
+        if pool_out is not None:
+            layer["pooling"] = nn.AdaptiveAvgPool1d(int(pool_out))
+
+        return nn.Sequential(layer)
+
+    def _fclayer(self, in_ch, out_ch) -> nn.modules.container.Sequential:
+        layer = OrderedDict()
+
+        layer["linear"] = nn.Linear(in_ch, out_ch)
+
+        if self.batchnorm:
+            layer["batch"] = nn.BatchNorm1d(out_ch)
+
+        if self.dropout:
+            layer["dropout"] = nn.Dropout()
+
+        layer["activation"] = self.activation
+
+        return nn.Sequential(layer)
+
+    def _get_activation_func(self, activation: str) -> nn.modules.activation:
+        """Returns the requested activation function.
+
+        Args:
+            activation (str): Name of the activation function.
+
+        Returns:
+            nn.modules.activation.ReLU: The chosen activationfunction
+        """
+        if activation == "relu":
+            function = nn.ReLU()
+        elif activation == "prelu":
+            function = nn.PReLU()
+        elif activation == "rrelu":
+            function = nn.RReLU()
+        elif activation == "leakyrelu":
+            function = nn.LeakyReLU()
+        elif activation == "gelu":
+            function = nn.GELU()
+        else:
+            raise NotImplementedError("Activation function not implemented")
+        return function
 
     def forward(self, x):
-        x = x.view((x.shape[0], -1, x.shape[-1]))
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
-        x = self.conv4(x)
-        x = self.conv5(x)
+
         x = x.view(x.size(0), -1)
         x = self.fc1(x)
+        x = self.fc2(x)
         return x

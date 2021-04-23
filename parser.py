@@ -82,10 +82,10 @@ def parser():
     )
     parser.add_argument(
         "--learning_rate",
-        default=1e-4,
+        default=1e-3,
         type=float,
         metavar="N",
-        help="learning rate (default 1e-4)",
+        help="learning rate (default 1e-3)",
     )
     parser.add_argument(
         "--weight_decay",
@@ -108,17 +108,17 @@ def parser():
         help=" list of datasets directory (used for both train and validation)",
     )
     parser.add_argument(
-        "--test_data_dir",
-        nargs="+",
-        type=str,
-        help="list of datasets directory used for testing",
-    )
-    parser.add_argument(
         "--weights_path",
         default=None,
         type=str,
         metavar="PATH",
         help="dataset directory used to load model's parameters (default: None)",
+    )
+    parser.add_argument(
+        "--train_size",
+        default=0.9,
+        type=float,
+        help="Size (in percent) of the training set (default: 0.9)",
     )
     parser.add_argument(
         "--input_name",

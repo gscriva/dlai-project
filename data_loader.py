@@ -1,8 +1,11 @@
+"Data preprocessing according to the current model."
+
 from typing import Any
+import random
+from math import floor
 
 import numpy as np
 import torch
-from math import floor
 from torch.utils.data import Dataset
 from torchvision import transforms
 
@@ -39,7 +42,10 @@ class Speckle(Dataset):
         # len single data
         len_data = data[data_name].shape[1]
 
-        # set seed as input
+        # reproducibility (to ensure we get
+        # the same training and validation set)
+        torch.manual_seed(seed)
+        random.seed(seed)
         np.random.seed(seed)
 
         # select train and validation indices
@@ -83,7 +89,7 @@ class Speckle(Dataset):
 
     def _get_correct_ds(self, data: Any, data_name: str, idx: np.array) -> None:
         """Depending on the model, input data are re-arrange in
-        different ways. 
+        different ways.
 
         Args:
             data ([Any]): Input data, as a numpy archive.
@@ -106,6 +112,13 @@ class Speckle(Dataset):
             self.dataset = data[data_name][idx, 1 : self.input_size]
             self._reshape_data()
             self.dataset = np.reshape(self.dataset, (-1, 1, 56))
+        elif self.model == "MyCNN":
+            self.dataset = np.append(
+                data[data_name][idx, -(self.input_size - 1) :],
+                data[data_name][idx, 1 : self.input_size],
+                axis=-1,
+            )
+            self._embedding()
         else:
             raise NotImplementedError("Only MLP and CNN are accepted")
 
@@ -113,12 +126,19 @@ class Speckle(Dataset):
         # as feature vector
         self._get_real_ds()
 
+    def _embedding(self) -> None:
+        """Embedding the dataset in a fix-size array, padding to zero.
+        """
+        embedded_dataset = np.zeros((self.dataset.shape[0], 112), dtype=np.cdouble)
+        embedded_dataset[:, 57 - self.input_size : 55 + self.input_size] = self.dataset
+        self.dataset = embedded_dataset
+
     def _get_real_ds(self) -> None:
         """Divides real and imag part of the input data.
         """
+        real_ds = np.real(self.dataset)
+        imag_ds = np.imag(self.dataset)
         if self.model == "FixMLP" or self.model == "FixCNN":
-            real_ds = np.real(self.dataset)
-            imag_ds = np.imag(self.dataset)
 
             if self.model == "FixMLP":
                 shape = (self.__len__(), 112)
@@ -130,13 +150,15 @@ class Speckle(Dataset):
             data[..., 1::2] = imag_ds
 
             self.dataset = data
+        elif self.model == "MyCNN":
+            self.dataset = np.stack(
+                (np.real(self.dataset), np.real(self.dataset)), axis=1
+            )
         else:
-            real_ds = np.real(self.dataset)
-            imag_ds = np.imag(self.dataset)
             self.dataset = np.append(real_ds, imag_ds, axis=-1)
 
     def _reshape_data(self) -> None:
-        """Reshape input data to fit in a fix-size array. 
+        """Reshape input data to fit in a fix-size array.
         """
         shape = (*self.dataset.shape[:-1], 56)
         data = np.zeros(shape, dtype=np.complex128)
@@ -159,7 +181,7 @@ class Speckle(Dataset):
         """This method fill 4 channels using available data.
         If the smaller size is passed, only the first channel will be used.
         If the medium size is passed the first two channels.
-        If the larger one is passed, we fill two extra channels, since everytime 
+        If the larger one is passed, we fill two extra channels, since everytime
         the input size is double.
         """
         if self.input_size == 15:

@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -6,13 +7,15 @@ import numpy as np
 from scipy import interpolate
 
 
-def load_param(path: str, x_newsize: int = None, method: str = "interp") -> OrderedDict:
+def load_param(
+    path: str, x_newsize: Optional[int] = None, method: Optional[str] = None
+) -> OrderedDict:
     """Load param from path and interpole them if requested.
 
     Args:
         path (str): Path to the model checkpoint.
-        x_newsize (int): Size of the first layer.
-        method (str, optional): Method to get the first layer weights. Defaults to "interp".
+        x_newsize (int, optional): Size of the first layer.
+        method (str, optional): Method to get the first layer weights. Defaults to None.
 
     Returns:
         OrderedDict: Dictionary with the pretrained model weights.
@@ -22,6 +25,9 @@ def load_param(path: str, x_newsize: int = None, method: str = "interp") -> Orde
         checkpoint = torch.load(path)
     except:
         raise FileNotFoundError("File {0} not found".format(path))
+
+    print("\nModel parameters initialized using weights in {0}".format(path))
+
     trained_param = checkpoint["model_state_dict"]
 
     if method == "interp":

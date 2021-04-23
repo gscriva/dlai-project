@@ -1,5 +1,9 @@
+"Main for DLAI project."
+
 import os
 from parser import parser
+import random
+from datetime import datetime
 
 import numpy as np
 import torch
@@ -18,6 +22,7 @@ from utils import (
     get_min_max,
     Normalize,
     Standardize,
+    test_all,
 )
 from init_parameters import freeze_param, init_weights
 
@@ -25,9 +30,12 @@ from init_parameters import freeze_param, init_weights
 # Fixed parameters
 OUTPUT_NAME = "evalues"
 TEST_BATCH_SIZE = 500
+SEED = 0
 
 
 def main():
+    """Train, test and evaluate the model.
+    """
     # Load parser
     pars = parser()
     args = pars.parse_args()
@@ -40,7 +48,7 @@ def main():
 
     if args.train:
         # Initialize directories
-        save_path = "checkpoints/{0}/L_{1}/batch{2}-layer{3}-hidden_dim{4}-{5}-init{6}-nofreeze{7}-wd{8}-kernel{9}-norm{10}-stand{11}".format(
+        save_path = "checkpoints/{0}/L_{1}/{13}-batch{2}-{5}-init{6}-stand{11}-norm{10}".format(
             args.model_type,
             args.input_size[0] - 1 if len(args.input_size) == 1 else args.input_size,
             args.batch_size,
@@ -53,11 +61,18 @@ def main():
             args.kernel_size,
             args.normalize,
             args.standardize,
+            args.train_size,
+            datetime.now().strftime("%Y%m%d_%H%M%S"),
         )
         os.makedirs(
             save_path, exist_ok=True,
         )
-        print("\nSaving checkpoints in {0}\n".format(save_path))
+        print("\nSaving checkpoints in {0}".format(save_path))
+
+    # reproducibility
+    torch.manual_seed(SEED)
+    random.seed(SEED)
+    np.random.seed(SEED)
 
     # limit number of CPUs
     torch.set_num_threads(args.workers)
@@ -69,8 +84,13 @@ def main():
 
     # import model and move it to GPU (if available)
     model = get_model(args, init=init).to(device)
+    print(
+        "\nNumber of model parameters: {0}\n".format(
+            sum(p.numel() for p in model.parameters() if p.requires_grad)
+        )
+    )
 
-    # Change type of weights
+    # Change type of weights since data are double
     if args.model_type != "GoogLeNet":
         model = model.double()
 
@@ -90,11 +110,13 @@ def main():
             torch.tensor,
         ]
         if args.normalize:
-            # min_val, max_val = get_min_max(args, idx)
+            # min_val, max_val = get_min_max(
+            #     args, idx
+            # )  # compute min and max in each dataset
             min_val, max_val = -3.403331349367293, 3.2769019702924895
             transform_list.append(Normalize(min_val, max_val))
         if args.standardize:
-            # mean, std = get_mean_std(args, idx)
+            # mean, std = get_mean_std(args, idx)  # compute mean and std in each dataset
             mean, std = 0.00017965349968347114, 0.43636118322494044
             transform_list.append(
                 Standardize(mean, std, args.normalize, min_val=min_val, max_val=max_val)
@@ -131,6 +153,7 @@ def main():
             transform=transform,
             num_workers=args.workers,
             model=args.model_type,
+            train_size=args.train_size,
         )
 
         # initialize R2 score class
@@ -186,6 +209,7 @@ def main():
             # for data, target in tqdm_iterator:
             for data, target in train_loader:
                 data, target = data.to(device), target.to(device)
+                # data are double but GoggLeNet accepts float
                 if args.model_type == "GoogLeNet":
                     data, target = data.float(), target.float()
 
@@ -220,6 +244,7 @@ def main():
             with torch.no_grad():
                 for data, target in valid_loader:
                     data, target = data.to(device), target.to(device)
+                    # data are double but GoggLeNet accepts float
                     if args.model_type == "GoogLeNet":
                         data, target = data.float(), target.float()
 
@@ -284,12 +309,18 @@ def main():
                     checkpoint_dict, save_path + "/model-epoch-{0}.tar".format(epoch,),
                 )
 
+        # retrive best model of train session
+        model.load_state_dict(
+            torch.load(save_path + "/best-model.tar")["model_state_dict"]
+        )
+        # save model to wandb
         if args.save_wandb:
-            # save model to wandb
             torch.save(
                 model.state_dict(), os.path.join(wandb.run.dir, "model_final.pt")
             )
-        return valid_r2.compute()
+
+        # perform test on all dataset
+        test_all(args, model, transform, OUTPUT_NAME, TEST_BATCH_SIZE)
     else:
         print("Loading model {}...".format(args.resume))
         checkpoint = torch.load(args.resume, map_location=lambda storage, loc: storage)
@@ -297,40 +328,8 @@ def main():
         # load weights
         model.load_state_dict(checkpoint["model_state_dict"])
 
-        # define test dataloader
-        test_loader, _ = load_data(
-            args.test_data_dir,
-            args.input_name,
-            OUTPUT_NAME,
-            args.input_size,
-            TEST_BATCH_SIZE,
-            0,
-            transform=transform,
-            num_workers=args.workers,
-            model=args.model_type,
-        )
-
-        # define r2 metrics
-        test_r2 = R2Score()
-        test_r2.reset()
-
-        model.eval()
-
-        with torch.no_grad():
-            for data, target in test_loader:
-                if args.model_type == "GoogLeNet":
-                    data = data.float()
-
-                pred = model(data)
-
-                # pred has dim (batch_size, 1)
-                pred = pred.squeeze()
-
-                # update R2 values iteratively
-                test_r2.update((pred, target))
-
-            print(f"Test set: R2 score: {test_r2.compute():.4f}\n")
-        return test_r2.compute()
+        # perform test on all dataset
+        test_all(args, model, transform, OUTPUT_NAME, TEST_BATCH_SIZE)
 
 
 if __name__ == "__main__":
