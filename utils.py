@@ -364,7 +364,7 @@ def get_model(args: argparse.Namespace, init: bool = False) -> Any:
             dropout=args.dropout,
             batchnorm=args.batchnorm,
             activation=args.activation,
-            init=False,
+            init=init,
             weights_path=args.weights_path,
         )
     elif args.model_type == "FixCNN":
@@ -416,15 +416,15 @@ def get_model(args: argparse.Namespace, init: bool = False) -> Any:
     return model
 
 
-class Standardize(nn.Module):
-    """Standardize data with mean 0 and std 1.
+class Normalize(nn.Module):
+    """Normalize data.
     """
 
     def __init__(
         self,
         mean: float,
         std: float,
-        normalize: bool,
+        scale: bool = False,
         min_val: float = 0.0,
         max_val: float = 0.0,
     ):
@@ -442,12 +442,10 @@ class Standardize(nn.Module):
         self.std /= max_val - min_val
 
     def __call__(self, x):
-        x = x - self.mean
-        x = x / self.std
-        return x
+        return (x - self.mean) / self.std
 
 
-class Normalize(nn.Module):
+class Scale(nn.Module):
     """Rescale data between 0 and 1.
     """
 
