@@ -430,9 +430,9 @@ class Normalize(nn.Module):
     ):
         self.mean = torch.tensor(mean)
         self.std = torch.tensor(std)
-        self.normalize = normalize
+        self.scale = scale
 
-        if self.normalize:
+        if self.scale:
             # if we have normalized data
             # mean and std are slightly different
             self._update_mean_std(min_val, max_val)
