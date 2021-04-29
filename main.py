@@ -21,7 +21,7 @@ from utils import (
     get_mean_std,
     get_min_max,
     Scale,
-    Standardize,
+    Normalize,
     test_all,
 )
 from init_parameters import freeze_param, init_weights
