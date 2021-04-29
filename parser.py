@@ -51,13 +51,19 @@ def parser():
         "--norm",
         dest="normalize",
         action="store_true",
-        help="use this flag to normalize the dataset",
+        help="use this flag to normalize the dataset in [-1,1]",
     )
     parser.add_argument(
         "--stand",
         dest="standardize",
         action="store_true",
-        help="use this flag to standardize the dataset",
+        help="use this flag to standardize the dataset (mu=0, std=1)",
+    )
+    parser.add_argument(
+        "--scale",
+        dest="scale",
+        action="store_true",
+        help="use this flag to scale the dataset in [0,1]",
     )
     parser.add_argument(
         "--batch_size",
@@ -157,10 +163,10 @@ def parser():
     )
     parser.add_argument(
         "--layers",
-        default=3,
+        default=4,
         type=int,
         metavar="N",
-        help="number of the hidden layers (default 3)",
+        help="number of the hidden layers (default 4)",
     )
     parser.add_argument(
         "--kernel_size",

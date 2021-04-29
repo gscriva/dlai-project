@@ -20,7 +20,7 @@ from utils import (
     get_model,
     get_mean_std,
     get_min_max,
-    Normalize,
+    Scale,
     Standardize,
     test_all,
 )
@@ -43,12 +43,12 @@ def main():
     print("\n\nArguments:\n{0}\n".format(args))
 
     # to be pass to the model
-    init = args.weights_path is not None
+    init = args.weights_path is not None and args.weights_path != "zeros"
     print("\nNon-parametric args:\ntest_batch_size: {0}".format(TEST_BATCH_SIZE))
 
     if args.train:
         # Initialize directories
-        save_path = "checkpoints/{0}/L_{1}/{13}-batch{2}-{5}-init{6}-stand{11}-norm{10}".format(
+        save_path = "checkpoints/{0}/L_{1}/{13}-batch{2}-{5}-init{6}-stand{11}-norm{10}-scale{14}-ts{12}".format(
             args.model_type,
             args.input_size[0] - 1 if len(args.input_size) == 1 else args.input_size,
             args.batch_size,
@@ -63,6 +63,7 @@ def main():
             args.standardize,
             args.train_size,
             datetime.now().strftime("%Y%m%d_%H%M%S"),
+            args.scale,
         )
         os.makedirs(
             save_path, exist_ok=True,
@@ -109,17 +110,19 @@ def main():
         transform_list = [
             torch.tensor,
         ]
-        if args.normalize:
+        if args.scale:
             # min_val, max_val = get_min_max(
             #     args, idx
             # )  # compute min and max in each dataset
             min_val, max_val = -3.403331349367293, 3.2769019702924895
-            transform_list.append(Normalize(min_val, max_val))
+            transform_list.append(Scale(min_val, max_val))
+            if args.normalize:
+                transform.append(Normalize(0.5, 0.5))
         if args.standardize:
             # mean, std = get_mean_std(args, idx)  # compute mean and std in each dataset
             mean, std = 0.00017965349968347114, 0.43636118322494044
             transform_list.append(
-                Standardize(mean, std, args.normalize, min_val=min_val, max_val=max_val)
+                Normalize(mean, std, args.scale, min_val=min_val, max_val=max_val)
             )
         transform.append(transforms.Compose(transform_list))
 
