@@ -455,8 +455,7 @@ class Scale(nn.Module):
 
     def __call__(self, x):
         # normalize
-        x = (x - self.min) / (self.max - self.min)
-        return x
+        return (x - self.min) / (self.max - self.min)
 
 
 def test_all(
