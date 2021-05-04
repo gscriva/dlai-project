@@ -117,7 +117,7 @@ def main():
             min_val, max_val = -3.403331349367293, 3.2769019702924895
             transform_list.append(Scale(min_val, max_val))
             if args.normalize:
-                transform.append(Normalize(0.5, 0.5))
+                transform_list.append(Normalize(0.5, 0.5))
         if args.standardize:
             # mean, std = get_mean_std(args, idx)  # compute mean and std in each dataset
             mean, std = 0.00017965349968347114, 0.43636118322494044
