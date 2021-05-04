@@ -54,7 +54,8 @@ class MultiLayerPerceptron(nn.Module):
         for i in range(len(sizes) - 1):
             fc_layers["linear{0}".format(i)] = nn.Linear(sizes[i], sizes[i + 1])
 
-            if init:
+            # first layer is initialize randomly
+            if init and i != 0:
                 fc_layers["linear{0}".format(i)].weight = nn.Parameter(
                     parameter["layers.linear{0}.weight".format(i)]
                 )
