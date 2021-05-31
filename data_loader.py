@@ -1,6 +1,6 @@
 "Data preprocessing according to the current model."
 
-from typing import Any
+from typing import Dict, Optional
 import random
 from math import floor
 
@@ -17,8 +17,8 @@ class Speckle(Dataset):
         self,
         data_file: str,
         data_name: str,
-        input_size: int = None,
-        transform: transforms.transforms.Compose = None,
+        input_size: Optional[int] = None,
+        transform: Optional[transforms.transforms.Compose] = None,
         output_name: str = "evalues",
         train: bool = True,
         train_size: float = 0.9,
@@ -29,13 +29,13 @@ class Speckle(Dataset):
         Args:
             data_file (str): Path to the npz file.
             data_name (str): Key to retrieve the correct array from the file.
-            input_size (int): Size of the input.
-            transform (torchvision.transforms.transforms.Compose) Compose of transformations to  apply to the dataset. Defaults to None.
+            input_size (int, optional): Size of the input. Default to None.
+            transform (torchvision.transforms.transforms.Compose, optional) Compose of transformations to  apply to the dataset. Defaults to None.
             output_name (str, optional): Key to get the energy values. Defaults to 'evalues'.
             train (bool, optional): Set True if it has to return the train set. Defaults to True.
             train_size (float, optional): Set the size of training set. Defaults to 0.9.
             seed (int, optional): Seed to split the dataset between training and validation set. Defaults to 0.
-            model (str, optional): Specify model. Defaults to MLP
+            model (str, optional): Specify model. Defaults to MLP.
         """
         data = np.load(data_file)
         size_ds = len(data[output_name])
@@ -74,7 +74,7 @@ class Speckle(Dataset):
         else:
             self.dataset = data[data_name][idx, :input_size]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return (self.evalues).size
 
     def __getitem__(self, idx):
@@ -87,12 +87,14 @@ class Speckle(Dataset):
         evalues = torch.tensor(evalues)
         return (image, evalues)
 
-    def _get_correct_ds(self, data: Any, data_name: str, idx: np.array) -> None:
+    def _get_correct_ds(
+        self, data: Dict[str, np.ndarray], data_name: str, idx: np.ndarray
+    ) -> None:
         """Depending on the model, input data are re-arrange in
         different ways.
 
         Args:
-            data ([Any]): Input data, as a numpy archive.
+            data (Dict[str, np.ndarray]): Input data, as a numpy archive.
             data_name ([str]): Name of the array in the archive to use.
             idx ([np.array]): Array with index of the required samples.
         """

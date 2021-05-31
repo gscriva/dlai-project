@@ -147,3 +147,5 @@ checkpoints/*
 *.txt
 test.ipynb
 computeEnergy.ipynb
+
+test.py

@@ -212,7 +212,7 @@ def main():
             # for data, target in tqdm_iterator:
             for data, target in train_loader:
                 data, target = data.to(device), target.to(device)
-                # data are double but GoggLeNet accepts float
+                # data are double but GoggLeNet only accepts float
                 if args.model_type == "GoogLeNet":
                     data, target = data.float(), target.float()
 
