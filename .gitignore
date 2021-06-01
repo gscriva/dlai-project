@@ -144,8 +144,8 @@ wandb/*
 checkpoints/*
 
 # print log
-*.txt
 test.ipynb
 computeEnergy.ipynb
+model_print/*
+*.out
 
-test.py

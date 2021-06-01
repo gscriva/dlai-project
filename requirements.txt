@@ -1,0 +1,5 @@
+torch==1.7.1
+wandb==0.10.17
+torchvision==0.8.2
+numpy==1.20.1
+ignite==0.4.2

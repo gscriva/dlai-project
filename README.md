@@ -11,6 +11,9 @@ We want to reproduce the results achieved in [Scientific reports 9.1 (2019): 1-1
 
 ## Usage
 
+### Requirements
+Install all the requirements using `pip install -r requirements.txt`, we recommend to create an isolated environment before.
+
 ### Data structure
 The input data must be organized as follow:
 ```
@@ -22,7 +25,7 @@ data
   └── ...
 ```
 
-They are not present on the git repo, but available in my Drive.
+They are not present on the git repo, but they are available in my Drive.
 
 ## Train
 To train with the simplest MLP model one has to run
