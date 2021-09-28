@@ -1,8 +1,8 @@
 # A Scalable Model for Predicting Ground State Energy
 
 ## Problem 
-Predict the lowest energy levels of a one-dimensional ultracold atoms subject an external optical speckle field (disorder).
-Our aim is to solve the Schrödinger equation and thus find the energy of the gound state. 
+Predict the lowest energy level of a one-dimensional ultracold atom subject to an external optical speckle field (disorder).
+Our aim is to solve the Schrödinger equation and thus find the the ground state energy. 
 
 
 ## Goal
@@ -25,11 +25,11 @@ data
   └── ...
 ```
 
-They are not present on the git repo, but they are available in my Drive.
+They are not present in the git repo, but they are available in my own Drive.
 
 ## Train
 To train with the simplest MLP model one has to run
 
 ```python main.py --train --data_dir data/train_dataL14.npz --input_size 15```.
 
-Several command are avialable to switch model, change MLP hidden structure, etc. Just run `python main.py --help`.
+Several commands are avialable to switch model, change MLP hidden structure, etc. Just run `python main.py --help`.
