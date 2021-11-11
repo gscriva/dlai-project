@@ -144,5 +144,6 @@ wandb/*
 checkpoints/*
 
 # print log
-*.txt
 test.ipynb
+model_print/*
+*.out

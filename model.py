@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from typing import List, Optional
 
 import numpy as np
 import torch
@@ -12,15 +13,15 @@ class MultiLayerPerceptron(nn.Module):
 
     def __init__(
         self,
-        layers,
-        hidden_dim,
-        input_size,
-        fix_model=False,
-        dropout=False,
-        batchnorm=False,
-        activation="rrelu",
-        init=False,
-        weights_path=None,
+        layers: int,
+        hidden_dim: int,
+        input_size: int,
+        fix_model: bool = False,
+        dropout: bool = False,
+        batchnorm: bool = False,
+        activation: str = "rrelu",
+        init: bool = False,
+        weights_path: Optional[str] = None,
     ):
         super(MultiLayerPerceptron, self).__init__()
 
@@ -76,7 +77,7 @@ class MultiLayerPerceptron(nn.Module):
 
         self.layers = nn.Sequential(fc_layers)
 
-    def _get_hidden_dims(self) -> list:
+    def _get_hidden_dims(self) -> List[int]:
         """The function returns a list of dimensions to be use
         n building the neural network.
 
@@ -96,14 +97,14 @@ class MultiLayerPerceptron(nn.Module):
         hidden_dims = (self.hidden_dim / hidden_dims).astype(int).tolist()
         return hidden_dims
 
-    def _get_activation_func(self, activation: str) -> nn.modules.activation:
+    def _get_activation_func(self, activation: str) -> nn.Module:
         """Returns the requested activation function.
 
         Args:
             activation (str): Name of the activation function.
 
         Returns:
-            nn.modules.activation.ReLU: The chosen activationfunction
+            nn.Module: The chosen activation function.
         """
         if activation == "relu":
             function = nn.ReLU()
@@ -129,7 +130,7 @@ class CNN(nn.Module):
     def __init__(
         self,
         in_ch: int,
-        kernel_size: int = None,
+        kernel_size: Optional[int] = None,
         dropout: bool = False,
         batchnorm: bool = False,
         activation: str = "rrelu",
@@ -179,7 +180,7 @@ class CNN(nn.Module):
         kernel_size: int,
         padding: int = 0,
         stride: int = 1,
-    ) -> nn.modules.container.Sequential:
+    ) -> nn.Module:
         layer = OrderedDict()
 
         layer["conv"] = nn.Conv1d(
@@ -200,7 +201,7 @@ class CNN(nn.Module):
 
         return nn.Sequential(layer)
 
-    def _fclayer(self, in_ch, out_ch) -> nn.modules.container.Sequential:
+    def _fclayer(self, in_ch, out_ch) -> nn.Module:
         layer = OrderedDict()
 
         layer["linear"] = nn.Linear(in_ch, out_ch)
@@ -215,14 +216,14 @@ class CNN(nn.Module):
 
         return nn.Sequential(layer)
 
-    def _get_activation_func(self, activation: str) -> nn.modules.activation:
+    def _get_activation_func(self, activation: str) -> nn.Module:
         """Returns the requested activation function.
 
         Args:
             activation (str): Name of the activation function.
 
         Returns:
-            nn.modules.activation.ReLU: The chosen activationfunction
+            nn.Module: The chosen activation function.
         """
         if activation == "relu":
             function = nn.ReLU()
@@ -243,7 +244,7 @@ class FixCNN(nn.Module):
     def __init__(
         self,
         in_ch: int,
-        kernel_size: int = None,
+        kernel_size: Optional[int] = None,
         dropout: bool = False,
         batchnorm: bool = False,
         activation: str = "rrelu",
@@ -283,8 +284,8 @@ class FixCNN(nn.Module):
         kernel_size: int,
         padding: int = 0,
         stride: int = 1,
-        padding_mode="zeros",
-    ) -> nn.modules.container.Sequential:
+        padding_mode: str = "zeros",
+    ) -> nn.Module:
         layer = OrderedDict()
 
         layer["conv"] = nn.Conv1d(
@@ -305,7 +306,7 @@ class FixCNN(nn.Module):
 
         return nn.Sequential(layer)
 
-    def _fclayer(self, in_ch, out_ch) -> nn.modules.container.Sequential:
+    def _fclayer(self, in_ch: int, out_ch: int) -> nn.Module:
         layer = OrderedDict()
 
         layer["linear"] = nn.Linear(in_ch, out_ch)
@@ -320,14 +321,14 @@ class FixCNN(nn.Module):
 
         return nn.Sequential(layer)
 
-    def _get_activation_func(self, activation: str) -> nn.modules.activation:
+    def _get_activation_func(self, activation: str) -> nn.Module:
         """Returns the requested activation function.
 
         Args:
             activation (str): Name of the activation function.
 
         Returns:
-            nn.modules.activation.ReLU: The chosen activationfunction
+            nn.Module: The chosen activation function.
         """
         if activation == "relu":
             function = nn.ReLU()
@@ -401,7 +402,7 @@ class GoogLeNet(nn.Module):
         outputs = [branch0, branch1, branch2, branch3]
         return torch.cat(outputs, 1)
 
-    def _fclayer(self, in_ch, out_ch) -> nn.modules.container.Sequential:
+    def _fclayer(self, in_ch: int, out_ch: int) -> nn.Module:
         layer = OrderedDict()
 
         layer["linear"] = nn.Linear(in_ch, out_ch)
@@ -421,8 +422,8 @@ class GoogLeNet(nn.Module):
         kernel_size: int = 3,
         padding: int = 0,
         stride: int = 1,
-        padding_mode="zeros",
-    ) -> nn.modules.container.Sequential:
+        padding_mode: str = "zeros",
+    ) -> nn.Module:
         layer = OrderedDict()
 
         layer["conv"] = nn.Conv1d(
@@ -443,14 +444,14 @@ class GoogLeNet(nn.Module):
 
         return nn.Sequential(layer)
 
-    def _get_activation_func(self, activation: str) -> nn.modules.activation:
+    def _get_activation_func(self, activation: str) -> nn.Module:
         """Returns the requested activation function.
 
         Args:
             activation (str): Name of the activation function.
 
         Returns:
-            nn.modules.activation.ReLU: The chosen activationfunction
+            nn.Module: The chosen activation function.
         """
         if activation == "relu":
             function = nn.ReLU()
@@ -526,8 +527,8 @@ class MyCNN(nn.Module):
         kernel_size: int,
         padding: int = 0,
         stride: int = 1,
-        pool_out: int = None,
-    ) -> nn.modules.container.Sequential:
+        pool_out: Optional[int] = None,
+    ) -> nn.Module:
         layer = OrderedDict()
 
         layer["conv"] = nn.Conv1d(
@@ -551,7 +552,7 @@ class MyCNN(nn.Module):
 
         return nn.Sequential(layer)
 
-    def _fclayer(self, in_ch, out_ch) -> nn.modules.container.Sequential:
+    def _fclayer(self, in_ch: int, out_ch: int) -> nn.Module:
         layer = OrderedDict()
 
         layer["linear"] = nn.Linear(in_ch, out_ch)
@@ -566,14 +567,14 @@ class MyCNN(nn.Module):
 
         return nn.Sequential(layer)
 
-    def _get_activation_func(self, activation: str) -> nn.modules.activation:
+    def _get_activation_func(self, activation: str) -> nn.Module:
         """Returns the requested activation function.
 
         Args:
             activation (str): Name of the activation function.
 
         Returns:
-            nn.modules.activation.ReLU: The chosen activationfunction
+            nn.Module: The chosen activation function.
         """
         if activation == "relu":
             function = nn.ReLU()

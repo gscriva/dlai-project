@@ -3,13 +3,13 @@
 import os
 from multiprocessing import Pool, cpu_count
 from math import floor
-from typing import Any, Callable, List, Tuple, Optional, Dict
+from typing import Any, Callable, List, Tuple, Optional, Dict, Union
 import argparse
 
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.utils.data import ConcatDataset
+from torch.utils.data import ConcatDataset, DataLoader
 from ignite.contrib.metrics.regression import R2Score
 import matplotlib.pyplot as plt
 import wandb
@@ -26,13 +26,11 @@ def load_data(
     input_size: List[int],
     batch_size: int,
     val_batch_size: int,
-    transform: Optional[list] = None,
+    transform: Optional[List[Any]] = None,
     num_workers: int = 8,
     model: str = "MLP",
     train_size: float = 0.9,
-) -> Tuple[
-    torch.utils.data.dataloader.DataLoader, torch.utils.data.dataloader.DataLoader
-]:
+) -> Tuple[DataLoader, DataLoader]:
     """Defines dataset as a class and return two loaders, for training and validation set
 
     Args:
@@ -42,7 +40,7 @@ def load_data(
         input_size (List[int]): Size(s) of the non-zero data to load.
         batch_size (int): Size of the batch during the training.
         val_batch_size (int): Size of the batch during the validation.
-        transform (list, optional): List of transforms to apply to the incoming dataset.
+        transform (List[Any], optional): List of transforms to apply to the incoming dataset.
             Defaults to None.
         num_workers (int, optional): Maximum number of CPU to use during parallel data reading.
             Defaults to 8.
@@ -159,14 +157,19 @@ def save_as_npz(
     return
 
 
-def read_arr_help(args: Any) -> Callable[[str, int, Any, str, str], tuple]:
+def read_arr_help(
+    args: Tuple[Any],
+) -> Callable[
+    [str, int, Union[int, Tuple[int]], Optional[str], Optional[str]],
+    Tuple[np.ndarray, np.ndarray],
+]:
     """A helper for read_arr used in parallel mode to unpack arguments.
 
     Args:
-        args (tuple): Arguments to be passed to read_arr.
+        args (Tuple[Any]): Arguments to be passed to read_arr.
 
     Returns:
-        read_arr (callable): See below.
+        read_arr (Callable): See below.
     """
     return read_arr(*args, None)
 
@@ -174,17 +177,17 @@ def read_arr_help(args: Any) -> Callable[[str, int, Any, str, str], tuple]:
 def read_arr(
     filepath: str,
     data_size: int,
-    usecols: Any = 0,
+    usecols: Union[int, Tuple[int]] = 0,
     outname: Optional[str] = None,
     outfile: Optional[str] = None,
-) -> Tuple[np.array, np.array]:
+) -> Tuple[np.ndarray, np.ndarray]:
     """This function reads .txt or .dat data and saves them as .npy or returns them as
         a numpy array.
 
     Args:
         filepath (str): Path to the data.
         data_size (int): Size of a single element, since they are stacked vertically.
-        usecols (int or tuple, optional): Specifies column (or columns) to import. Default to 0.
+        usecols (Union[int, Tuple[int]], optional): Specifies column (or columns) to import. Default to 0.
         outname (str, optional): To set iff the filename is not the original name in the path.
             Default to None.
         outfile (str, optional): Name of the file to be saved, if None output is not saved.
@@ -219,12 +222,12 @@ def read_arr(
 
 
 def split_ds(
-    datas: list, seed: int = 42, test_size: float = 0.2
-) -> Dict[str, List[Tuple[np.array, np.array]]]:
+    datas: List[np.ndarray], seed: int = 42, test_size: float = 0.2
+) -> Dict[str, List[Tuple[np.ndarray, np.ndarray]]]:
     """Split the dataset between training and test set.
 
     Args:
-        datas (list): List of data.
+        datas (List[np.ndarray]): List of data.
         seed (int, optional): Seed to generate pseudo-random split for test set. Defaults to 42.
         test_size (float, optional): Percent of the size the test set. Defaults to 0.2.
 
@@ -526,14 +529,14 @@ def test_all(
 ##################### PLOT FUNCTIONS ########################
 
 
-def pltdataset(plt_num: int, data: np.lib.npyio.NpzFile, keys: list) -> None:
+def pltdataset(plt_num: int, data: Dict[str, np.ndarray], keys: List[str]) -> None:
     """Function pltgrid plots a grid of samples indexed by a list of keys.
     The plot has as many rows as the length of keys list.
 
     Args:
         plt_num (int): Number of samples to be plotted for each key.
-        data (np.lib.npyio.NpzFile): Data stored as an .npz archive.
-        keys (list): Keys to be retrived from the data archive.
+        data (Dict[str, np.ndarray]): Data stored as an .npz archive.
+        keys (List[str]): Keys to be retrived from the data archive.
     """
     idx = np.random.randint(0, data[keys[0]].shape[0], plt_num)
     images = []
